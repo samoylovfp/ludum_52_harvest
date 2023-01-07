@@ -37,7 +37,6 @@ fn handle_input(keys: Res<Input<KeyCode>>, mut app_state: ResMut<State<AppState>
 			AppState::Terrain => app_state.set(AppState::Panel).unwrap(),
 			AppState::Panel => app_state.set(AppState::Finish).unwrap(),
 			AppState::Finish => app_state.set(AppState::Start).unwrap(),
-			_ => (),
 		}
     }
 }
