@@ -1,79 +1,55 @@
-use std::io::Cursor;
-
 use bevy::prelude::*;
-use image::{DynamicImage, ImageBuffer};
+
+mod start;
+mod terrain;
+mod panel;
+mod finish;
+mod util;
+
+pub const PIXEL_MULTIPLIER: f32 = 5.0;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+		.add_state(AppState::Start)
+		.insert_resource(ClearColor(Color::BLACK))
+		.add_plugins(DefaultPlugins.set(WindowPlugin {
+			window: WindowDescriptor {
+			title: "Moon 2023".to_string(),
+			width: 160.0 * PIXEL_MULTIPLIER,
+			height: 120.0 * PIXEL_MULTIPLIER,
+			..default()
+			},
+			..default()
+		}))
+		.add_plugin(start::Start)
+		.add_plugin(terrain::Terrain)
+		.add_plugin(panel::Panel)
+		.add_plugin(finish::Finish)
         .add_startup_system(setup)
-        .add_startup_system(setup_terrain)
-        .add_system(sprite_movement)
+		.add_system(handle_input)
         .run();
 }
 
-#[derive(Component)]
-enum Direction {
-    Up,
-    Down,
+fn handle_input(keys: Res<Input<KeyCode>>, mut app_state: ResMut<State<AppState>>) {
+    if keys.just_pressed(KeyCode::Space) {
+        match app_state.current() {
+			AppState::Start => app_state.set(AppState::Terrain).unwrap(),
+			AppState::Terrain => app_state.set(AppState::Panel).unwrap(),
+			AppState::Panel => app_state.set(AppState::Finish).unwrap(),
+			AppState::Finish => app_state.set(AppState::Start).unwrap(),
+			_ => (),
+		}
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AppState {
+	Start,
+    Terrain,
+    Panel,
+    Finish,
 }
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                color: Color::Rgba {
-                    red: 1.0,
-                    green: 0.0,
-                    blue: 0.0,
-                    alpha: 1.0,
-                },
-                custom_size: Some(Vec2 { x: 300.0, y: 300.0 }),
-                ..default()
-            },
-            transform: Transform::from_xyz(100., 0., 0.),
-            ..default()
-        },
-        Direction::Up,
-    ));
-}
-
-fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
-    commands.spawn(SpriteBundle {
-        texture: textures.add(image_from_aseprite(include_bytes!(
-            "../assets/placeholders/terrain.aseprite"
-        ))),
-        ..default()
-    });
-}
-
-fn image_from_aseprite(ase_bytes: &[u8]) -> Image {
-    let image = asefile::AsepriteFile::read(Cursor::new(ase_bytes))
-        .expect("valid aseprite")
-        .layers()
-        .next()
-        .expect("at least one layer")
-        .frame(0)
-        .image();
-    let img_buf = ImageBuffer::from_raw(image.width(), image.height(), image.into_raw())
-        .expect("size of containers to match");
-    Image::from_dynamic(DynamicImage::ImageRgba8(img_buf), true)
-}
-
-/// The sprite is animated by changing its translation depending on the time that has passed since
-/// the last frame.
-fn sprite_movement(time: Res<Time>, mut sprite_position: Query<(&mut Direction, &mut Transform)>) {
-    for (mut logo, mut transform) in &mut sprite_position {
-        match *logo {
-            Direction::Up => transform.translation.y += 150. * time.delta_seconds(),
-            Direction::Down => transform.translation.y -= 150. * time.delta_seconds(),
-        }
-
-        if transform.translation.y > 200. {
-            *logo = Direction::Down;
-        } else if transform.translation.y < -200. {
-            *logo = Direction::Up;
-        }
-    }
 }
