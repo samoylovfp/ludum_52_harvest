@@ -38,7 +38,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: build
         run: |
-          trunk build --public-url=.
+          trunk build --release --public-url=.
           # workaround for trunk making absolute paths
           sed -ri 's#/./#./#g' dist/index.html
       - name: Setup Pages
