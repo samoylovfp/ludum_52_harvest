@@ -20,15 +20,7 @@ impl Plugin for Terrain {
 }
 
 fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
-    let mut image = image_from_aseprite(include_bytes!("../assets/placeholders/terrain.aseprite"));
-
-    // Do not interpolate the image
-    image.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor {
-        mag_filter: bevy::render::render_resource::FilterMode::Nearest,
-        min_filter: bevy::render::render_resource::FilterMode::Nearest,
-        ..default()
-    });
-
+    let image = image_from_aseprite(include_bytes!("../assets/placeholders/terrain.aseprite"));
     let size = image.size() * PIXEL_MULTIPLIER;
     commands
         .spawn(SpriteBundle {
@@ -42,6 +34,22 @@ fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
         .insert(TerrainMarker);
 }
 
-fn setup_buggy(mut commands: Commands) {
-    
+fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
+    let buggy_image = image_from_aseprite(include_bytes!("../assets/buggyv3.aseprite"));
+    let size = buggy_image.size() * PIXEL_MULTIPLIER;
+    commands.spawn(SpriteBundle {
+        sprite: Sprite {
+            custom_size: Some(size),
+            ..default()
+        },
+        transform: Transform {
+            translation: Vec3 {
+                z: 1.0,
+                ..default()
+            },
+            ..default()
+        },
+        texture: textures.add(buggy_image),
+        ..default()
+    });
 }
