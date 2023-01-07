@@ -32,6 +32,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           target: "wasm32-unknown-unknown"
+          toolchain: stable
       - name: Install Trunk
         uses: mbround18/trunk-rs@v0.0.1
       - name: build
