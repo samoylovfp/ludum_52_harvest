@@ -3,10 +3,8 @@ use crate::{
     util::image_from_aseprite,
     AppState, PIXEL_MULTIPLIER,
 };
-use bevy::{
-    prelude::*,
-    render::{render_resource::SamplerDescriptor, texture::ImageSampler},
-};
+use bevy::prelude::*;
+use bevy_rapier2d::{prelude::*, rapier::prelude::RigidBodyDamping};
 
 #[derive(Component)]
 pub struct TerrainMarker;
@@ -14,9 +12,7 @@ pub struct TerrainMarker;
 pub struct Terrain;
 
 #[derive(Component)]
-pub struct Buggy {
-    velocity: f32,
-}
+pub struct Buggy {}
 
 impl Plugin for Terrain {
     fn build(&self, app: &mut App) {
@@ -29,11 +25,17 @@ impl Plugin for Terrain {
             SystemSet::on_update(AppState::Terrain)
                 .with_system(move_harvesters)
                 .with_system(buggy_movement_and_control),
-        );
+        )
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(12.0))
+        .add_plugin(RapierDebugRenderPlugin::default());
     }
 }
 
-fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
+fn setup_terrain(
+    mut commands: Commands,
+    mut textures: ResMut<Assets<Image>>,
+    mut phys: ResMut<RapierConfiguration>,
+) {
     let image = image_from_aseprite(include_bytes!("../assets/placeholders/terrain.aseprite"));
     let size = image.size() * PIXEL_MULTIPLIER;
     commands
@@ -48,13 +50,14 @@ fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
         .insert(TerrainMarker);
 
     add_harvester(commands, textures, (0, 0), 0);
+    phys.gravity = Vec2 { x: 0.0, y: 0.0 };
 }
 
 fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
     let buggy_image = image_from_aseprite(include_bytes!("../assets/spritebuggy3.aseprite"));
     let size = buggy_image.size() * PIXEL_MULTIPLIER;
-    commands
-        .spawn(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             sprite: Sprite {
                 custom_size: Some(size),
                 ..default()
@@ -62,67 +65,88 @@ fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
             transform: Transform {
                 translation: Vec3 {
                     z: 1.0,
+                    y: 26.0 * PIXEL_MULTIPLIER,
                     ..default()
                 },
                 ..default()
             },
             texture: textures.add(buggy_image),
             ..default()
-        })
-        .insert(Buggy {
-            velocity: default(),
-        });
+        },
+        Buggy {},
+        RigidBody::Dynamic,
+        Damping {
+            angular_damping: 0.9,
+            linear_damping: 0.1,
+        },
+        Collider::cuboid(6.0 * PIXEL_MULTIPLIER, 10.0 * PIXEL_MULTIPLIER),
+        ColliderMassProperties::Density(2.0),
+        Velocity::default(),
+        ExternalForce::default(),
+        TerrainMarker,
+    ));
 }
 
+#[allow(clippy::type_complexity)]
 fn buggy_movement_and_control(
-    mut buggy: Query<(&mut Buggy, &mut Transform), Without<Camera2d>>,
+    mut buggy: Query<(&Velocity, &mut ExternalForce, &Transform), (With<Buggy>, Without<Camera2d>)>,
     mut camera: Query<&mut Transform, With<Camera2d>>,
     keys: Res<Input<KeyCode>>,
 ) {
     let mut position = None;
 
-    let max_fwd_speed = 20.0;
-    let max_bck_speed = -2.0;
-    let speedup = 0.5;
-    let friction = 0.05;
-    let stop_thresh = 0.01;
-    let max_turn_rate = 0.03;
+    let friction = 400.0;
+    let max_turn_force = 3000.0;
+    let horse_power_fwd = 10_000.0;
+    let horse_power_back = 2_000.0;
 
-    if let Ok((mut buggy, mut buggy_pos)) = buggy.get_single_mut() {
-        let turn_rate = (buggy.velocity.abs() / 50.0).min(max_turn_rate);
+    if let Ok((vel, mut force, pos)) = buggy.get_single_mut() {
+        let buggy_side = pos.rotation
+            * Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            };
+        let buggy_heading = pos.rotation
+        * Vec3 {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        };
+        let turn_force = (vel.linvel.length() * 10_000.0).min(max_turn_force);
+
+        let mut torque = 0.0;
+        let mut acceleration = 0.0;
+        force.force = Vec2::default();
+
         if keys.pressed(KeyCode::W) {
-            buggy.velocity += speedup;
+            acceleration = horse_power_fwd;
         }
         if keys.pressed(KeyCode::S) {
-            buggy.velocity -= speedup;
+            acceleration = -horse_power_back;
         }
         if keys.pressed(KeyCode::A) {
-            buggy_pos.rotation =
-                (buggy_pos.rotation * Quat::from_rotation_z(turn_rate)).normalize();
+            torque = turn_force;
         }
         if keys.pressed(KeyCode::D) {
-            buggy_pos.rotation =
-                (buggy_pos.rotation * Quat::from_rotation_z(-turn_rate)).normalize();
+            torque = -turn_force;
         }
-        buggy.velocity =
-            (buggy.velocity - friction * buggy.velocity).clamp(max_bck_speed, max_fwd_speed);
+        force.torque = torque;
+        force.force += buggy_heading.truncate() * acceleration;
 
-        if buggy.velocity.abs() > stop_thresh {
-            let mut buggy_heading = buggy_pos.rotation
-                * Vec3 {
-                    x: 0.0,
-                    y: 1.0,
-                    z: 0.0,
-                };
+        let lateral_force = vel.linvel.project_onto(buggy_side.truncate());
+        let mut lateral_friction = Vec2::default();
 
-            // We don't want our car to move about Z axis
-            buggy_heading.z = 0.0;
-
-            buggy_pos.translation += buggy_heading * buggy.velocity;
-            position = Some(buggy_pos.translation);
+        if lateral_force.length() > 0.01 {
+            lateral_friction = -lateral_force * friction;
         }
+
+        force.force += lateral_friction;
+        position = Some(pos.translation);
+
     }
     if let Some(pos) = position {
         camera.get_single_mut().unwrap().translation = pos;
+        camera.get_single_mut().unwrap().translation.z = 100.0;
     }
 }

@@ -1,8 +1,6 @@
 use crate::{terrain::TerrainMarker, util::image_from_aseprite};
-use bevy::{
-    prelude::*,
-    render::{render_resource::SamplerDescriptor, texture::ImageSampler},
-};
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::{Collider, RigidBody};
 
 use super::*;
 
@@ -12,7 +10,7 @@ pub fn add_harvester(
     cell: (i8, i8),
     slot: usize,
 ) {
-    let mut image = image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite"));
+    let image = image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite"));
 
     let size = image.size() * PIXEL_MULTIPLIER;
     let center_coords = (
@@ -42,6 +40,10 @@ pub fn add_harvester(
         .insert(Moves(true))
         .insert(Direction::Right)
         .insert(TerrainMarker)
+        .insert((
+            RigidBody::KinematicPositionBased,
+            Collider::cuboid(10.0 * PIXEL_MULTIPLIER, 10.0 * PIXEL_MULTIPLIER),
+        ))
         .id();
 
     commands
@@ -81,21 +83,31 @@ pub fn move_harvesters(
             Direction::Left => transform.translation.x -= 1.0,
         };
         let offset = (CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER) as i32;
-		let angle = -90.0_f32.to_radians();
+        let angle = -90.0_f32.to_radians();
         match (
             (transform.translation.x - current_cell.0) as i32,
             (transform.translation.y - current_cell.1) as i32,
         ) {
-            (o1, o2) if o1 == offset && o2 == offset => {*direction = Direction::Down; transform.rotate_z(angle)},
-            (o1, o2) if o1 == offset && o2 == -offset => {*direction = Direction::Left; transform.rotate_z(angle)},
-            (o1, o2) if o1 == -offset && o2 == -offset => {*direction = Direction::Up; transform.rotate_z(angle)},
-            (o1, o2) if o1 == -offset && o2 == offset => {*direction = Direction::Right; transform.rotate_z(angle)},
+            (o1, o2) if o1 == offset && o2 == offset => {
+                *direction = Direction::Down;
+                transform.rotate_z(angle)
+            }
+            (o1, o2) if o1 == offset && o2 == -offset => {
+                *direction = Direction::Left;
+                transform.rotate_z(angle)
+            }
+            (o1, o2) if o1 == -offset && o2 == -offset => {
+                *direction = Direction::Up;
+                transform.rotate_z(angle)
+            }
+            (o1, o2) if o1 == -offset && o2 == offset => {
+                *direction = Direction::Right;
+                transform.rotate_z(angle)
+            }
             _ => (),
         }
     }
 }
-
-
 
 #[derive(Component)]
 pub struct Harvester;
