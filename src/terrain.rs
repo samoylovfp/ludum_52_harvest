@@ -1,5 +1,12 @@
-use crate::{util::image_from_aseprite, AppState, PIXEL_MULTIPLIER};
-use bevy::prelude::*;
+use crate::{
+    harvester::{add_harvester, move_harvesters},
+    util::image_from_aseprite,
+    AppState, PIXEL_MULTIPLIER,
+};
+use bevy::{
+    prelude::*,
+    render::{render_resource::SamplerDescriptor, texture::ImageSampler},
+};
 
 #[derive(Component)]
 pub struct TerrainMarker;
@@ -18,7 +25,11 @@ impl Plugin for Terrain {
                 .with_system(setup_terrain)
                 .with_system(setup_buggy),
         )
-        .add_system(buggy_movement_and_control);
+        .add_system_set(
+            SystemSet::on_update(AppState::Terrain)
+                .with_system(move_harvesters)
+                .with_system(buggy_movement_and_control),
+        );
     }
 }
 
@@ -35,6 +46,8 @@ fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
             ..default()
         })
         .insert(TerrainMarker);
+
+    add_harvester(commands, textures, (0, 0), 0);
 }
 
 fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {

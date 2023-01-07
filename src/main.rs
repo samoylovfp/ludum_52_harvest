@@ -5,8 +5,10 @@ mod terrain;
 mod panel;
 mod finish;
 mod util;
+mod harvester;
 
 pub const PIXEL_MULTIPLIER: f32 = 5.0;
+pub const CELL_SIZE_TERRAIN: f32 = 40.0;
 
 fn main() {
     App::new()
