@@ -35,6 +35,7 @@ jobs:
           toolchain: stable
       - name: Install Trunk
         uses: mbround18/trunk-rs@v0.0.1
+      - uses: Swatinem/rust-cache@v2
       - name: build
         run: |
           trunk build --public-url=.
