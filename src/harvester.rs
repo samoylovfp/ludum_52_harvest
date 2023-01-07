@@ -1,5 +1,8 @@
-use crate::{terrain::TerrainMarker, util::image_from_aseprite};
-use bevy::prelude::*;
+use crate::{terrain::TerrainMarker, tooltip::TooltipString, util::image_from_aseprite};
+use bevy::{
+    prelude::*,
+    render::{render_resource::SamplerDescriptor, texture::ImageSampler},
+};
 use bevy_rapier2d::prelude::{Collider, RigidBody};
 
 use super::*;
@@ -44,6 +47,7 @@ pub fn add_harvester(
             RigidBody::KinematicPositionBased,
             Collider::cuboid(10.0 * PIXEL_MULTIPLIER, 10.0 * PIXEL_MULTIPLIER),
         ))
+        .insert(TooltipString("Working...".to_string()))
         .id();
 
     commands
@@ -65,6 +69,7 @@ pub fn add_harvester(
         .insert(HarvestTime(0))
         .insert(Helium(0))
         .insert(SlotNumber(slot))
+        .insert(TooltipString("Collecting...".to_string()))
         .insert(TerrainMarker);
 }
 

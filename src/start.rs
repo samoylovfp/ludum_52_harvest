@@ -16,6 +16,7 @@ impl Plugin for Start {
 
 fn spawn_start(mut commands: Commands, mut fonts: ResMut<Assets<Font>>) {
     let font = include_bytes!("../assets/PublicPixel-z84yD.ttf");
+	// FIXME (samoylovfp) deduplicate
     let font_handle = fonts.add(Font::try_from_bytes(font.to_vec()).expect("valid font"));
     commands
         .spawn(
