@@ -108,11 +108,11 @@ fn buggy_movement_and_control(
                 z: 0.0,
             };
         let buggy_heading = pos.rotation
-        * Vec3 {
-            x: 0.0,
-            y: 1.0,
-            z: 0.0,
-        };
+            * Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            };
         let turn_force = (vel.linvel.length() * 10_000.0).min(max_turn_force);
 
         let mut torque = 0.0;
@@ -143,7 +143,6 @@ fn buggy_movement_and_control(
 
         force.force += lateral_friction;
         position = Some(pos.translation);
-
     }
     if let Some(pos) = position {
         camera.get_single_mut().unwrap().translation = pos;

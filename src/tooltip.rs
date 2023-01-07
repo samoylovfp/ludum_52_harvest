@@ -60,16 +60,19 @@ pub fn update_tooltip(
 
         tooltip.translation.x = world_pos.x + 10.0;
         tooltip.translation.y = world_pos.y - 10.0;
-		tooltip.translation.z = 2.0;
-		dbg!(tooltip.translation);
+        tooltip.translation.z = 2.0;
+        dbg!(tooltip.translation);
     }
 
-	text.sections[0].value = "".to_string();
+    text.sections[0].value = "".to_string();
 
     for (object, string) in objects.iter() {
         if collide(
             object.translation,
-            Vec2 { x: 15.0 * PIXEL_MULTIPLIER, y: 15.0 * PIXEL_MULTIPLIER},
+            Vec2 {
+                x: 15.0 * PIXEL_MULTIPLIER,
+                y: 15.0 * PIXEL_MULTIPLIER,
+            },
             world_pos,
             Vec2 { x: 1.0, y: 1.0 },
         )
