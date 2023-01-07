@@ -12,14 +12,7 @@ pub fn add_harvester(
     cell: (i8, i8),
     slot: usize,
 ) {
-    let mut image = image_from_aseprite(include_bytes!("../assets/centerv1.aseprite"));
-
-    // Do not interpolate the image
-    image.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor {
-        mag_filter: bevy::render::render_resource::FilterMode::Nearest,
-        min_filter: bevy::render::render_resource::FilterMode::Nearest,
-        ..default()
-    });
+    let mut image = image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite"));
 
     let size = image.size() * PIXEL_MULTIPLIER;
     let center_coords = (

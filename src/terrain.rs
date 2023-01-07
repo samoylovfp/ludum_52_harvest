@@ -51,7 +51,7 @@ fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
 }
 
 fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
-    let buggy_image = image_from_aseprite(include_bytes!("../assets/buggyv3.aseprite"));
+    let buggy_image = image_from_aseprite(include_bytes!("../assets/spritebuggy3.aseprite"));
     let size = buggy_image.size() * PIXEL_MULTIPLIER;
     commands
         .spawn(SpriteBundle {
