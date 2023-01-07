@@ -35,6 +35,8 @@ jobs:
           toolchain: stable
       - name: Install Trunk
         uses: mbround18/trunk-rs@v0.0.1
+        with:
+          version: "v0.16.0"
       - uses: Swatinem/rust-cache@v2
       - name: build
         run: |
