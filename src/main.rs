@@ -1,11 +1,13 @@
-//! Exampel from Bevy 2D
+use std::io::Cursor;
 
 use bevy::prelude::*;
+use image::{DynamicImage, ImageBuffer};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
+        .add_startup_system(setup_terrain)
         .add_system(sprite_movement)
         .run();
 }
@@ -35,6 +37,28 @@ fn setup(mut commands: Commands) {
         },
         Direction::Up,
     ));
+}
+
+fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
+    commands.spawn(SpriteBundle {
+        texture: textures.add(image_from_aseprite(include_bytes!(
+            "../assets/placeholders/terrain.aseprite"
+        ))),
+        ..default()
+    });
+}
+
+fn image_from_aseprite(ase_bytes: &[u8]) -> Image {
+    let image = asefile::AsepriteFile::read(Cursor::new(ase_bytes))
+        .expect("valid aseprite")
+        .layers()
+        .next()
+        .expect("at least one layer")
+        .frame(0)
+        .image();
+    let img_buf = ImageBuffer::from_raw(image.width(), image.height(), image.into_raw())
+        .expect("size of containers to match");
+    Image::from_dynamic(DynamicImage::ImageRgba8(img_buf), true)
 }
 
 /// The sprite is animated by changing its translation depending on the time that has passed since
