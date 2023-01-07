@@ -11,7 +11,11 @@ pub struct Terrain;
 
 impl Plugin for Terrain {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(setup_terrain));
+        app.add_system_set(
+            SystemSet::on_enter(AppState::Terrain)
+                .with_system(setup_terrain)
+                .with_system(setup_buggy),
+        );
     }
 }
 
@@ -24,7 +28,7 @@ fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
         min_filter: bevy::render::render_resource::FilterMode::Nearest,
         ..default()
     });
-    
+
     let size = image.size() * PIXEL_MULTIPLIER;
     commands
         .spawn(SpriteBundle {
@@ -36,4 +40,8 @@ fn setup_terrain(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
             ..default()
         })
         .insert(TerrainMarker);
+}
+
+fn setup_buggy(mut commands: Commands) {
+    
 }
