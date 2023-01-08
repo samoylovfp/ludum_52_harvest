@@ -1,8 +1,8 @@
 use crate::{
-    buggy::{buggy_movement_and_control, setup_buggy},
-    harvester::{add_harvester, move_harvesters},
+    buggy::{buggy_movement_and_control, setup_buggy, Buggy},
+    harvester::{add_harvester, move_harvesters, Center, Helium},
     util::image_from_aseprite,
-    AppState, PIXEL_MULTIPLIER,
+    AppState, PIXEL_MULTIPLIER, tooltip::TooltipString,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -71,3 +71,5 @@ fn enable_terrain_cam(
     cam.for_each_mut(|mut c| c.is_active = true);
     panel_cam.for_each_mut(|mut c| c.is_active = false);
 }
+
+fn move_helium(mut buggy: Query<(&Transform, &mut Helium, &mut TooltipString),(With<Buggy>, Without<Center>)>) {}

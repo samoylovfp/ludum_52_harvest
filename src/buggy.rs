@@ -1,4 +1,4 @@
-use crate::{terrain::TerrainMarker, util::image_from_aseprite, AppState, PIXEL_MULTIPLIER};
+use crate::{terrain::TerrainMarker, util::image_from_aseprite, AppState, PIXEL_MULTIPLIER, harvester::Helium, tooltip::TooltipString};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -36,6 +36,8 @@ pub fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
         ColliderMassProperties::Density(2.0),
         Velocity::default(),
         ExternalForce::default(),
+		Helium(0),
+		TooltipString("".to_string()),
         TerrainMarker,
     ));
 }

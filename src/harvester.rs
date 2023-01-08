@@ -200,7 +200,7 @@ pub struct SlotNumber(usize);
 pub struct HarvesterId(Entity);
 
 #[derive(Component)]
-pub struct Helium(usize);
+pub struct Helium(pub usize);
 
 #[derive(Component)]
 pub struct HarvestTime(usize);
