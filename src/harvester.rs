@@ -105,7 +105,7 @@ pub fn add_harvester(
         .insert(TooltipString("Collecting...".to_string()))
         .insert((
             RigidBody::Fixed,
-            Collider::cuboid(12.5 * PIXEL_MULTIPLIER, 12.5 * PIXEL_MULTIPLIER),
+            Collider::cuboid(11.0 * PIXEL_MULTIPLIER, 11.0 * PIXEL_MULTIPLIER),
         ))
         .insert(TerrainMarker);
 }
