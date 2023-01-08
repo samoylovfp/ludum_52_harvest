@@ -2,7 +2,7 @@ use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
     harvester::{
         move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, StoredCanisters,
-        TotalHarvesters, MAX_HELIUM,
+        TotalHarvesters, MAX_HELIUM, BREAKTIME,
     },
     start::{check_end, set_timer},
     tooltip::{spawn_tooltip, TooltipString},
@@ -14,7 +14,7 @@ use bevy_rapier2d::prelude::*;
 use once_cell::sync::OnceCell;
 use rand::{thread_rng, Rng};
 
-pub const COLLECT_DISTANCE: f32 = 500.0;
+pub const COLLECT_DISTANCE: f32 = 300.0;
 pub const TERRAIN_SIZE: (f32, f32) = (440.0 * PIXEL_MULTIPLIER, 320.0 * PIXEL_MULTIPLIER);
 pub const MAX_HELIUM_STORAGE: usize = 20;
 pub const HELIUM_TO_BUILD_HARVESTER: usize = MAX_HELIUM_STORAGE / 2;
@@ -267,7 +267,7 @@ fn mouse_clicks(
                         }
                         HarvesterState::Broken => {
                             let mut rng = thread_rng();
-                            breaktime.0 = rng.gen_range(100..1000);
+                            breaktime.0 = rng.gen_range(BREAKTIME.0..BREAKTIME.1);
                             if helium.0 == MAX_HELIUM {
                                 *state = HarvesterState::Full;
                             } else {

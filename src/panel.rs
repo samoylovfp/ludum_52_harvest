@@ -747,7 +747,7 @@ fn update_ship(
     ship_transform.translation.y =
         ship.start.y + ((ship.finish.y - ship.start.y) * timer.timer.percent());
     string.0 = format!(
-        "{} seconds left before arriving",
+        "{} seconds left before arrival",
         timer.timer.remaining_secs() as i32
     );
 }

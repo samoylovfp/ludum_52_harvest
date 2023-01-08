@@ -1,3 +1,5 @@
+use bevy::text::Text2dBounds;
+
 use crate::{
     harvester::StoredCanisters,
     panel::PanelMarker,
@@ -42,20 +44,24 @@ fn spawn_finish(
     mut commands: Commands,
     tanks: Res<StoredCanisters>,
     mut textures: ResMut<Assets<Image>>,
+	mut fonts: ResMut<Assets<Font>>,
 ) {
     let mut picture;
+	let mut text;
     if tanks.0 >= CANISTERS_TO_WIN {
         picture = img_handle_and_size_from_bytes(
             include_bytes!("../assets/spriteendgood.aseprite"),
             "Layer 1",
             &mut textures,
         );
+		text = "Good this text wraPps in the box d  dhfhf dhdhd fhfhhf dfhfhf dhdh ksksks shshshhshs shs shd dhd d ddjjddnd djdjdjjdjd djdjdndj hh".to_uppercase();
     } else {
         picture = img_handle_and_size_from_bytes(
             include_bytes!("../assets/spriteendbad.aseprite"),
             "Layer 1",
             &mut textures,
         );
+		text = "Bad this text wraPps in the box d  dhfhf dhdhd fhfhhf dfhfhf dhdh ksksks shshshhshs shs shd dhd d ddjjddnd djdjdjjdjd djdjdndj hh".to_uppercase();
     }
     commands.spawn(Camera2dBundle::default());
     commands.spawn(SpriteBundle {
@@ -66,5 +72,31 @@ fn spawn_finish(
         texture: picture.0,
         ..default()
     });
-    // img_handle_and_size_from_bytes(panel_bytes, "exitup", &mut textures),
+	let font = include_bytes!("../assets/PublicPixel-z84yD.ttf");
+    // FIXME (samoylovfp) deduplicate
+    let font_handle = fonts.add(Font::try_from_bytes(font.to_vec()).expect("valid font"));
+
+
+	let box_size = Vec2::new(600.0, 600.0);
+    let box_position = Vec2::new(0.0, -250.0);
+	let text_style = TextStyle {
+        font: font_handle,
+        font_size: 20.0,
+        color: Color::WHITE,
+    };
+
+	commands.spawn(Text2dBundle {
+        text: Text::from_section(text, text_style),
+        text_2d_bounds: Text2dBounds {
+            size: box_size,
+        },
+
+        transform: Transform::from_xyz(
+            box_position.x - box_size.x / 2.0,
+            box_position.y + box_size.y / 2.0,
+            1.0,
+        ),
+        ..default()
+    });
+	
 }

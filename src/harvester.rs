@@ -11,8 +11,9 @@ use rand::{thread_rng, Rng};
 
 use super::*;
 
-pub const HARVEST_SPEED: usize = 10;
-pub const MAX_HELIUM: usize = 10;
+pub const HARVEST_SPEED: usize = 30;
+pub const MAX_HELIUM: usize = 30;
+pub const BREAKTIME: (i32, i32) = (300, 2000);
 
 pub fn add_harvester(
     mut commands: Commands,
@@ -93,7 +94,7 @@ pub fn add_harvester(
             ..default()
         })
         .insert(Center)
-        .insert(BreakTime(rng.gen_range(100..1000)))
+        .insert(BreakTime(rng.gen_range(BREAKTIME.0..BREAKTIME.1)))
         .insert(HarvesterId(harvester_id))
         .insert(slot_icon)
         .insert(center_icon)
