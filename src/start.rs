@@ -18,10 +18,33 @@ impl Plugin for StartPlugin {
 
 fn spawn_start(mut commands: Commands, mut fonts: ResMut<Assets<Font>>) {
     commands.spawn((Camera2dBundle::default(), StartMarker));
+    let font_size = 14.0;
 
     let font = include_bytes!("../assets/PublicPixel-z84yD.ttf");
     // FIXME (samoylovfp) deduplicate
     let font_handle = fonts.add(Font::try_from_bytes(font.to_vec()).expect("valid font"));
+    commands
+        .spawn(
+            TextBundle::from_section(
+                include_str!("start_text.txt"),
+                TextStyle {
+                    font: font_handle.clone(),
+                    font_size,
+                    color: Color::GRAY,
+                },
+            )
+            .with_text_alignment(TextAlignment::TOP_LEFT)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    left: Val::Px(5.0),
+                    top: Val::Px(5.0),
+                    ..default()
+                },
+                ..default()
+            }),
+        )
+        .insert(StartMarker);
     commands
         .spawn(
             TextBundle::from_section(
@@ -64,12 +87,12 @@ pub fn check_end(
     time: Res<Time>,
     mut app_state: ResMut<State<AppState>>,
 ) {
-	if timer.is_empty() {
-		return ;
-	}
+    if timer.is_empty() {
+        return;
+    }
     let mut timer = timer.single_mut();
     timer.timer.tick(time.delta());
-	// println!("{}", timer.timer.remaining_secs());
+    // println!("{}", timer.timer.remaining_secs());
     if timer.timer.finished() {
         app_state.set(AppState::Finish).unwrap();
     }

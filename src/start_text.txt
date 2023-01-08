@@ -1,0 +1,26 @@
+The freighter ship was supposed to pick you up
+several months ago, but it never came.
+Your contact from the corporation went on sick leave
+and never returned.
+Then the communication channel closed.
+In the faint radio broadcasts you capture with
+your make-shift aerial you hear garbled fragments
+of news ... virus .... millions dead
+
+Luckily the expedition ship Aurora is returning
+from their last multi-year Jovial mission.
+They don't have enough fuel to pick you up,
+but it is in your hands to harvest enough
+helium-3 to change their minds.
+This might be the last chance to get out of
+this foresaken barren rock.
+
+Start with building a harvester
+and then work expeditiously
+to gather 5 tanks of helium
+before the expedition ship
+passes the point of no return.
+use WASD to drive around and
+mouse to interact with the harvesters.
+You have to choose beteen storing helium
+and building more harvesters
