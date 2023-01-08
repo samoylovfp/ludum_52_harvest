@@ -41,5 +41,3 @@ Craft 5 tanks of fuel before ship's arrival.
   - To craft a tank simply click on its button when it's green
   - After crafting 5 tanks game will end with the good ending
 - Press Space to play again after finishing
-
-## Russian
