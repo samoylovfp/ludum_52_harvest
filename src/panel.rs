@@ -178,6 +178,7 @@ fn handle_harv_blueprint(
     mut stopper: EventWriter<StopBuildingHarvesters>,
     mut harvesters: ResMut<TotalHarvesters>,
     mut slot_sprites: Query<(Entity, &mut Handle<Image>, &SlotNumber), With<PanelMarker>>,
+    panel_state: Res<PanelState>
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
     let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
@@ -201,8 +202,7 @@ fn handle_harv_blueprint(
         + PANEL_OFFSET.truncate();
 
     harv_blueprint.for_each_mut(|mut t| t.translation = world_coord.extend(2.0));
-
-    if buttons.just_pressed(MouseButton::Left) {
+    if buttons.just_pressed(MouseButton::Left) && panel_state.building_harvester {
         let (slot_entity, mut slot_image_handler, slot_number) = {
             let s = slot_sprites
                 .iter_mut()
