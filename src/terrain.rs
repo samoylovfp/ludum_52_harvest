@@ -1,11 +1,12 @@
 use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
     harvester::{
-        move_harvesters, BreakTime, Center, HarvesterState, Helium, TotalHarvesters, MAX_HELIUM,
+        move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, TotalHarvesters,
+        MAX_HELIUM,
     },
     tooltip::TooltipString,
-    util::image_from_aseprite,
-    AppState, PIXEL_MULTIPLIER,
+    util::{image_from_aseprite, image_from_aseprite_layer_name_frame, TerrainAssetHandlers},
+    AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -21,6 +22,9 @@ pub struct TerrainMarker;
 #[derive(Component)]
 pub struct TerrainSprite;
 
+#[derive(Component)]
+pub struct MapButton;
+
 pub struct TerrainPlugin;
 
 impl Plugin for TerrainPlugin {
@@ -30,7 +34,11 @@ impl Plugin for TerrainPlugin {
                 .with_system(setup_terrain)
                 .with_system(setup_buggy),
         )
-        .add_system_set(SystemSet::on_update(AppState::Terrain).with_system(mouse_clicks))
+        .add_system_set(
+            SystemSet::on_update(AppState::Terrain)
+                .with_system(mouse_clicks)
+                .with_system(update_button),
+        )
         .add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(enable_terrain_cam))
         .add_system(move_harvesters)
         .add_system(buggy_movement_and_control)
@@ -43,6 +51,7 @@ fn setup_terrain(
     mut commands: Commands,
     mut textures: ResMut<Assets<Image>>,
     mut phys: ResMut<RapierConfiguration>,
+    terrain_assets: Res<TerrainAssetHandlers>,
 ) {
     //FIXME filsam: reduce boilerplate
     static TERRAIN_IMAGE_CELL: OnceCell<Image> = OnceCell::new();
@@ -87,10 +96,24 @@ fn setup_terrain(
                 },
                 ..default()
             })
-            .insert((RigidBody::Fixed, Collider::cuboid(collider[2], collider[3])));
+            .insert((RigidBody::Fixed, Collider::cuboid(collider[2], collider[3])))
+            .insert(TerrainMarker);
     }
 
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(terrain_assets.map_button[0].1),
+                ..default()
+            },
+            texture: terrain_assets.map_button[0].0.clone(),
+            ..default()
+        })
+        .insert(MapButton)
+        .insert(TerrainMarker);
+
     commands.insert_resource(TotalHarvesters(0));
+    commands.insert_resource(StorageHelium(0));
 }
 
 fn enable_terrain_cam(
@@ -117,6 +140,8 @@ fn mouse_clicks(
     wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     buttons: Res<Input<MouseButton>>,
+    mut app_state: ResMut<State<AppState>>,
+    map_button: Query<(&Transform, &Sprite), With<MapButton>>,
 ) {
     let (buggy, mut storage, mut buggy_string) = buggy.single_mut();
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
@@ -134,6 +159,22 @@ fn mouse_clicks(
             let ndc_to_world =
                 camera_transform.compute_matrix() * camera.projection_matrix().inverse();
             let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
+
+            let (map_button, button_sprite) = map_button.single();
+
+            if collide(
+                map_button.translation,
+                Vec2 {
+                    x: button_sprite.custom_size.unwrap().x,
+                    y: button_sprite.custom_size.unwrap().y,
+                },
+                world_pos,
+                Vec2 { x: 1.0, y: 1.0 },
+            )
+            .is_some()
+            {
+                app_state.set(AppState::Panel).unwrap();
+            }
 
             for (center, sprite, mut helium, mut state, mut breaktime) in centers.iter_mut() {
                 if collide(
@@ -171,6 +212,26 @@ fn mouse_clicks(
                     buggy_string.0 = format!("Helium amount: {}", storage.0);
                 }
             }
+        }
+    }
+}
+
+pub fn update_button(
+    camera: Query<&Transform, (With<TerrainMarker>, With<Camera2d>, Without<MapButton>)>,
+    mut button: Query<(&mut Transform, &mut Handle<Image>), With<MapButton>>,
+    centers: Query<&HarvesterState, With<Center>>,
+    terrain_assets: Res<TerrainAssetHandlers>,
+) {
+    let camera = camera.single().translation;
+    let (mut button, mut sprite) = button.single_mut();
+    button.translation.x = camera.x - WIDTH / 2.0 + 40.0;
+    button.translation.y = camera.y + HEIGHT / 2.0 - 50.0;
+    button.translation.z = 3.0;
+
+    *sprite = terrain_assets.map_button[0].0.clone();
+    for center in centers.iter() {
+        if !matches!(*center, HarvesterState::Work) {
+            *sprite = terrain_assets.map_button[1].0.clone();
         }
     }
 }

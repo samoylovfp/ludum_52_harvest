@@ -57,8 +57,8 @@ pub struct TerrainAssetHandlers {
     pub center_terrain_lamps: [ImgHWithSize; 3],
     pub harvester: ImgHWithSize,
     pub center: ImgHWithSize,
-    // 0 - button, 1 - red lamp, 2 - green lamp
-    pub map_button: [ImgHWithSize; 3],
+	// 0 - green, 1 - red
+	pub map_button: [ImgHWithSize; 2],
 }
 
 #[derive(Resource)]
@@ -110,7 +110,7 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
             "base",
             &mut textures,
         ),
-        map_button: ["buttonup", "red", "green"].map(|layer_name| {
+		map_button: ["green", "red"].map(|layer_name| {
             img_handle_and_size_from_bytes(button_bytes, layer_name, &mut textures)
         }),
     });

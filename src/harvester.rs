@@ -287,3 +287,6 @@ pub struct TotalHarvesters(pub usize);
 
 #[derive(Component)]
 pub struct Lamp;
+
+#[derive(Resource)]
+pub struct StorageHelium(pub usize);
