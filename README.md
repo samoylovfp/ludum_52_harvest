@@ -25,6 +25,7 @@ Craft 5 tanks of fuel before ship's arrival.
 - Harvesters:
   - Crafting Harvester requires half of the storage tank (check green bar on info panel)
   - To craft a harvester click on the corresponding button when it's green and position it on the map with another mouse click
+  - Harvesters can't be placed too close to each other
   - Harvesters collect fuel in their center, you can come near and click on them to transfer it in your vehicle storage
   - Harvesters have maximum capacity, they will stop when full
   - Harvesters may break - you need to come and click on the center to repair it
@@ -39,5 +40,6 @@ Craft 5 tanks of fuel before ship's arrival.
   - Crafting Tank requires full storage tank
   - To craft a tank simply click on its button when it's green
   - After crafting 5 tanks game will end with the good ending
+- Press Space to play again after finishing
 
 ## Russian
