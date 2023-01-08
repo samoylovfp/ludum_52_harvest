@@ -139,7 +139,7 @@ fn mouse_clicks(
     >,
     wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
-    buttons: Res<Input<MouseButton>>,
+    mut buttons: ResMut<Input<MouseButton>>,
     mut app_state: ResMut<State<AppState>>,
     map_button: Query<(&Transform, &Sprite), With<MapButton>>,
 ) {
@@ -174,6 +174,8 @@ fn mouse_clicks(
             .is_some()
             {
                 app_state.set(AppState::Panel).unwrap();
+				buttons.clear();
+				return ;
             }
 
             for (center, sprite, mut helium, mut state, mut breaktime) in centers.iter_mut() {

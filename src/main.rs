@@ -45,14 +45,12 @@ fn main() {
 fn handle_input(keys: Res<Input<KeyCode>>, mut app_state: ResMut<State<AppState>>) {
     if keys.just_pressed(KeyCode::Space) {
         let state = app_state.current().clone();
-        app_state
-            .set(match state {
-                AppState::Start => AppState::Terrain,
-                AppState::Terrain => AppState::Panel,
-                AppState::Panel => AppState::Terrain,
-                AppState::Finish => AppState::Start,
-            })
-            .unwrap()
+		match state {
+			AppState::Start => app_state.set(AppState::Terrain).unwrap(),
+			AppState::Terrain => (),
+			AppState::Panel => (),
+			AppState::Finish => app_state.set(AppState::Start).unwrap(),
+		}
     }
 }
 

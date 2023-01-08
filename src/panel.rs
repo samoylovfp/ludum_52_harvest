@@ -1,5 +1,7 @@
 use std::io::Cursor;
 
+use bevy::{render::camera::RenderTarget, sprite::collide_aabb::collide};
+
 use crate::{
     harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, TotalHarvesters},
     util::{
@@ -29,6 +31,9 @@ struct PanelState {
 #[derive(Component)]
 struct HarvesterBlueprint;
 
+#[derive(Component)]
+pub struct TerrainButton;
+
 impl Plugin for PanelPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_exit(AppState::Start).with_system(set_up_panel))
@@ -36,7 +41,8 @@ impl Plugin for PanelPlugin {
             .add_system_set(
                 SystemSet::on_update(AppState::Panel)
                     .with_system(toggle_building)
-                    .with_system(handle_harv_blueprint),
+                    .with_system(handle_harv_blueprint)
+					.with_system(mouse_clicks_panel),
             )
             .add_event::<StopBuildingHarvesters>();
     }
@@ -118,6 +124,26 @@ fn set_up_panel(
             },
         ));
     }
+
+	commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(panel_assets.exit.1),
+                ..default()
+            },
+			transform: Transform {
+                translation: Vec3 {
+                    x: PANEL_OFFSET.x,
+                    y: PANEL_OFFSET.y,
+                    z: 100.0,
+                },
+                ..default()
+            },
+            texture: panel_assets.exit.0.clone(),
+            ..default()
+        })
+        .insert(TerrainButton)
+        .insert(PanelMarker);
 }
 
 fn enable_panel_cam(
@@ -245,4 +271,46 @@ fn handle_harv_blueprint(
         harvesters.0 += 1;
         stopper.send(StopBuildingHarvesters);
     }
+}
+
+fn mouse_clicks_panel(wnds: Res<Windows>,
+    q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+    mut buttons: ResMut<Input<MouseButton>>,
+    mut app_state: ResMut<State<AppState>>,
+    terrain_button: Query<(&Transform, &Sprite), With<TerrainButton>>,) {
+		let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
+
+    let wnd = if let RenderTarget::Window(id) = camera.target {
+        wnds.get(id).unwrap()
+    } else {
+        wnds.get_primary().unwrap()
+    };
+
+    if buttons.just_pressed(MouseButton::Left) {
+        if let Some(screen_pos) = wnd.cursor_position() {
+            let window_size = Vec2::new(wnd.width(), wnd.height());
+            let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
+            let ndc_to_world =
+                camera_transform.compute_matrix() * camera.projection_matrix().inverse();
+            let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
+
+            let (terrain_button, button_sprite) = terrain_button.single();
+
+            if collide(
+                terrain_button.translation,
+                Vec2 {
+                    x: button_sprite.custom_size.unwrap().x,
+                    y: button_sprite.custom_size.unwrap().y,
+                },
+                world_pos,
+                Vec2 { x: 1.0, y: 1.0 },
+            )
+            .is_some()
+            {
+                app_state.set(AppState::Terrain).unwrap();
+				buttons.clear();
+				return ;
+            }
+		}
+	}
 }
