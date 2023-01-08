@@ -473,7 +473,10 @@ fn handle_harv_blueprint(
     panel_assets: Res<PanelAssetHandlers>,
     mut stopper: EventWriter<StopBuildingHarvesters>,
     mut harvesters: ResMut<TotalHarvesters>,
-    mut slot_sprites: Query<(Entity, &mut Handle<Image>, &SlotNumber), (With<PanelMarker>, Without<HarvesterBlueprint>)>,
+    mut slot_sprites: Query<
+        (Entity, &mut Handle<Image>, &SlotNumber),
+        (With<PanelMarker>, Without<HarvesterBlueprint>),
+    >,
     panel_state: Res<PanelState>,
     mut helium: ResMut<StorageHelium>,
     occupied_cells: Query<&Cell>,
