@@ -37,7 +37,7 @@ pub fn update_tooltip(
 ) {
     let (mut tooltip, mut text) = tooltip.single_mut();
 
-    let Ok((camera, camera_transform)) = q_camera.get_single() else {return};
+    let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
 
     let wnd = if let RenderTarget::Window(id) = camera.target {
         wnds.get(id).unwrap()
