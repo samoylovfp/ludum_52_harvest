@@ -1,11 +1,14 @@
 use std::io::Cursor;
 
-use bevy::{ecs::query::ROQueryItem, render::camera::RenderTarget, sprite::collide_aabb::collide};
+use bevy::{
+    ecs::query::ROQueryItem, render::camera::RenderTarget, sprite::collide_aabb::collide,
+    utils::HashSet,
+};
 
 use crate::{
     buggy::Buggy,
     harvester::{
-        add_harvester, CenterIcon, SlotIcon, SlotNumber, StorageHelium, StoredCanisters,
+        add_harvester, Cell, CenterIcon, SlotIcon, SlotNumber, StorageHelium, StoredCanisters,
         TotalHarvesters,
     },
     start::EndTimer,
@@ -459,10 +462,10 @@ fn toggle_building(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn handle_harv_blueprint(
     mut commands: Commands,
-    mut harv_blueprint: Query<&mut Transform, With<HarvesterBlueprint>>,
+    mut harv_blueprint: Query<(&mut Transform, &mut Handle<Image>), With<HarvesterBlueprint>>,
     wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     buttons: Res<Input<MouseButton>>,
@@ -470,9 +473,10 @@ fn handle_harv_blueprint(
     panel_assets: Res<PanelAssetHandlers>,
     mut stopper: EventWriter<StopBuildingHarvesters>,
     mut harvesters: ResMut<TotalHarvesters>,
-    mut slot_sprites: Query<(Entity, &mut Handle<Image>, &SlotNumber), With<PanelMarker>>,
+    mut slot_sprites: Query<(Entity, &mut Handle<Image>, &SlotNumber), (With<PanelMarker>, Without<HarvesterBlueprint>)>,
     panel_state: Res<PanelState>,
     mut helium: ResMut<StorageHelium>,
+    occupied_cells: Query<&Cell>,
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
     let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
@@ -480,13 +484,42 @@ fn handle_harv_blueprint(
     let (cell_coord, world_coord_on_panel) =
         panel_coord_to_cell_and_snapped_panel_world_coord(world_cursor_pos);
 
-    harv_blueprint.for_each_mut(|mut t| t.translation = world_coord_on_panel.extend(2.0));
-    if buttons.just_pressed(MouseButton::Left) && panel_state.building_harvester {
-        // TODO if placement valid
+    let mut occupied_cells_with_neigh = HashSet::new();
+    for Cell((x, y)) in occupied_cells.iter() {
+        for neigh_x in -1..=1 {
+            for neigh_y in -1..=1 {
+                occupied_cells_with_neigh.insert((x + neigh_x, y + neigh_y));
+            }
+        }
+    }
+
+    let mut overlaps = false;
+
+    'neigh: for neigh_x in -1..=1 {
+        for neigh_y in -1..=1 {
+            let coord = (cell_coord.0 + neigh_x, cell_coord.1 + neigh_y);
+            if occupied_cells_with_neigh.contains(&coord) {
+                overlaps = true;
+                break 'neigh;
+            }
+        }
+    }
+
+    let (new_img, _size) = &panel_assets.center_icon[match overlaps {
+        true => 2,
+        false => 0,
+    }];
+
+    harv_blueprint.for_each_mut(|(mut t, mut img)| {
+        t.translation = world_coord_on_panel.extend(2.0);
+        *img = new_img.clone()
+    });
+    if buttons.just_pressed(MouseButton::Left) && panel_state.building_harvester && !overlaps {
         if helium.0 < HELIUM_TO_BUILD_HARVESTER {
             stopper.send(StopBuildingHarvesters);
             return;
         }
+
         let (slot_entity, mut slot_image_handler, slot_number) = {
             let s = slot_sprites
                 .iter_mut()
@@ -717,38 +750,4 @@ fn update_ship(
         "{} seconds left before arriving",
         timer.timer.remaining_secs() as i32
     );
-}
-
-fn spawn_ship(mut commands: Commands, panel_assets: Res<PanelAssetHandlers>) {
-    commands
-        .spawn(SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(panel_assets.ship.1),
-                ..default()
-            },
-            transform: Transform {
-                translation: Vec3 {
-                    x: PANEL_OFFSET.x - WIDTH / 2.0 + 40.0,
-                    y: PANEL_OFFSET.y + HEIGHT / 2.0 - 120.0,
-                    z: 3.0,
-                },
-                ..default()
-            },
-            texture: panel_assets.ship.0.clone(),
-            ..default()
-        })
-        .insert(Ship {
-            start: Vec3 {
-                x: PANEL_OFFSET.x - WIDTH / 2.0 + 40.0,
-                y: PANEL_OFFSET.y + HEIGHT / 2.0 - 120.0,
-                z: 3.0,
-            },
-            finish: Vec3 {
-                x: PANEL_OFFSET.x + 80.0,
-                y: PANEL_OFFSET.y + 200.0,
-                z: 3.0,
-            },
-        })
-        .insert(TooltipString("ship".to_string()))
-        .insert(PanelMarker);
 }

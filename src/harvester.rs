@@ -258,7 +258,7 @@ pub fn update_center(
 pub struct Harvester;
 
 #[derive(Component)]
-pub struct Cell((i8, i8));
+pub struct Cell(pub (i8, i8));
 
 #[derive(Component)]
 pub struct Moves(bool);
