@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
 use crate::util::{
-    bevy_image_from_ase_image, get_cursor_pos_in_world_coord, image_from_aseprite,
+    bevy_image_from_ase_image, get_cursor_pos_in_world_coord,
     image_from_aseprite_layer_name_frame,
 };
 
@@ -123,21 +123,22 @@ fn toggle_building(
 ) {
     if keys.just_pressed(KeyCode::B) {
         panel_state.building_harvester = !panel_state.building_harvester;
-    }
-    if panel_state.building_harvester {
-        commands.spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    custom_size: Some(panel_assets.center_icon[2].1),
+
+        if panel_state.building_harvester {
+            commands.spawn((
+                SpriteBundle {
+                    sprite: Sprite {
+                        custom_size: Some(panel_assets.center_icon[2].1),
+                        ..default()
+                    },
+                    texture: panel_assets.center_icon[2].0.clone(),
                     ..default()
                 },
-                texture: panel_assets.center_icon[2].0.clone(),
-                ..default()
-            },
-            HarvesterBlueprint,
-        ));
-    } else {
-        blueprints.for_each(|b| commands.entity(b).despawn())
+                HarvesterBlueprint,
+            ));
+        } else {
+            blueprints.for_each(|b| commands.entity(b).despawn())
+        }
     }
 }
 
