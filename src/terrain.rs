@@ -4,8 +4,8 @@ use crate::{
         move_harvesters, BreakTime, Center, HarvesterState, Helium, TotalHarvesters, MAX_HELIUM,
     },
     tooltip::TooltipString,
-    util::image_from_aseprite,
-    AppState, PIXEL_MULTIPLIER,
+    util::{image_from_aseprite, image_from_aseprite_layer_name_frame},
+    AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -16,6 +16,12 @@ pub const COLLECT_DISTANCE: f32 = 500.0;
 
 #[derive(Component)]
 pub struct TerrainMarker;
+
+#[derive(Resource)]
+pub struct TerrainAssetHandlers {
+    // 0 - red, 1 - yellow, 2 - green
+	pub center_terrain_lamps: [(Handle<Image>, Vec2); 3],
+}
 
 #[derive(Component)]
 pub struct TerrainSprite;
@@ -93,6 +99,18 @@ fn setup_terrain(
     }
 
     commands.insert_resource(TotalHarvesters(0));
+	let center_terrain_lamps_bytes = include_bytes!("../assets/spritecenter1.aseprite");
+
+    commands.insert_resource(TerrainAssetHandlers {
+        center_terrain_lamps: ["red", "yellow", "green"].map(|layer_name| {
+            let img = image_from_aseprite_layer_name_frame(center_terrain_lamps_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+    });
+
+    // FIXME remove this when proper harvester spawning is implemented
+    // add_harvester(commands, textures, terrain_assets, (0, 0), 0);
 }
 
 fn enable_terrain_cam(
