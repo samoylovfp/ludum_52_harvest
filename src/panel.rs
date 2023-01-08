@@ -6,6 +6,7 @@ use crate::{
     buggy::Buggy,
     harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, StorageHelium, TotalHarvesters},
     terrain::{HELIUM_TO_BUILD_HARVESTER, MAX_HELIUM_STORAGE},
+    tooltip::TooltipString,
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
         TerrainAssetHandlers,
@@ -165,7 +166,7 @@ fn set_up_panel(
                 translation: Vec3 {
                     x: PANEL_OFFSET.x,
                     y: PANEL_OFFSET.y,
-                    z: 100.0,
+                    z: 3.0,
                 },
                 ..default()
             },
@@ -191,6 +192,7 @@ fn set_up_panel(
             ..default()
         })
         .insert(SwitchToTerrainButton)
+        .insert(TooltipString("Back to vehicle".to_string()))
         .insert(PanelMarker);
 
     commands

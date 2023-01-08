@@ -117,6 +117,7 @@ fn setup_terrain(
             ..default()
         })
         .insert(MapButton)
+		.insert(TooltipString("Open info panel".to_string()))
         .insert(TerrainMarker);
 
     commands

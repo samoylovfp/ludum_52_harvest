@@ -52,7 +52,7 @@ pub fn update_tooltip(
     if let Some(world_pos) = get_cursor_pos_in_world_coord(wnd, camera_transform, camera) {
         tooltip.translation.x = world_pos.x + 10.0;
         tooltip.translation.y = world_pos.y - 10.0;
-        tooltip.translation.z = 2.0;
+        tooltip.translation.z = 5.0;
 
         for (object, sprite, string) in objects.iter() {
             if collide(
