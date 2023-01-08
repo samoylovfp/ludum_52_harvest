@@ -1,9 +1,7 @@
 use crate::{terrain::TerrainMarker, tooltip::TooltipString, util::image_from_aseprite};
-use bevy::{
-    prelude::*,
-    render::{render_resource::SamplerDescriptor, texture::ImageSampler},
-};
+use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
+use once_cell::sync::OnceCell;
 
 use super::*;
 
@@ -13,9 +11,15 @@ pub fn add_harvester(
     cell: (i8, i8),
     slot: usize,
 ) {
-    let image = image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite"));
+    static HARV_IMAGE_CELL: OnceCell<Image> = OnceCell::new();
+    static HARV_TEXTURE_HANDLE_CELL: OnceCell<Handle<Image>> = OnceCell::new();
 
-    let size = image.size() * PIXEL_MULTIPLIER;
+    let harv_image = HARV_IMAGE_CELL
+        .get_or_init(|| image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite")));
+    let harv_texture_handle =
+        HARV_TEXTURE_HANDLE_CELL.get_or_init(|| textures.add(harv_image.clone()));
+    let size = harv_image.size() * PIXEL_MULTIPLIER;
+
     let center_coords = (
         cell.0 as f32 * PIXEL_MULTIPLIER,
         cell.1 as f32 * PIXEL_MULTIPLIER,
@@ -34,7 +38,7 @@ pub fn add_harvester(
                 ),
                 ..Default::default()
             },
-            texture: textures.add(image.clone()),
+            texture: harv_texture_handle.clone(),
 
             ..default()
         })
@@ -56,7 +60,7 @@ pub fn add_harvester(
                 custom_size: Some(size),
                 ..default()
             },
-            texture: textures.add(image),
+            texture: harv_texture_handle.clone(),
             transform: Transform {
                 translation: Vec3::new(center_coords.0, center_coords.1, 1.0),
                 ..Default::default()

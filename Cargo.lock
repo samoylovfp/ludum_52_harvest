@@ -2056,6 +2056,7 @@ dependencies = [
  "bevy",
  "bevy_rapier2d",
  "image 0.24.5",
+ "once_cell",
 ]
 
 [[package]]

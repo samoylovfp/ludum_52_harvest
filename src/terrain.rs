@@ -3,8 +3,9 @@ use crate::{
     util::image_from_aseprite,
     AppState, PIXEL_MULTIPLIER,
 };
-use bevy::prelude::*;
+use bevy::{asset::HandleId, prelude::*};
 use bevy_rapier2d::{prelude::*, rapier::prelude::RigidBodyDamping};
+use once_cell::sync::OnceCell;
 
 #[derive(Component)]
 pub struct TerrainMarker;
@@ -36,15 +37,23 @@ fn setup_terrain(
     mut textures: ResMut<Assets<Image>>,
     mut phys: ResMut<RapierConfiguration>,
 ) {
-    let image = image_from_aseprite(include_bytes!("../assets/placeholders/terrain.aseprite"));
-    let size = image.size() * PIXEL_MULTIPLIER;
+    static TERRAIN_IMAGE_CELL: OnceCell<Image> = OnceCell::new();
+    static TERRAIN_TEXTURE_HANDLE_CELL: OnceCell<Handle<Image>> = OnceCell::new();
+
+    let terrain_image = TERRAIN_IMAGE_CELL.get_or_init(|| {
+        image_from_aseprite(include_bytes!("../assets/placeholders/terrain.aseprite"))
+    });
+    let terrain_texture_handle =
+        TERRAIN_TEXTURE_HANDLE_CELL.get_or_init(|| textures.add(terrain_image.clone()));
+    let size = terrain_image.size() * PIXEL_MULTIPLIER;
+
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
                 custom_size: Some(size),
                 ..default()
             },
-            texture: textures.add(image),
+            texture: terrain_texture_handle.clone(),
             ..default()
         })
         .insert(TerrainMarker);
