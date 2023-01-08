@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use harvester::update_center;
 use tooltip::{spawn_tooltip, update_tooltip};
 
 mod finish;
@@ -32,6 +33,7 @@ fn main() {
         .add_startup_system(spawn_tooltip)
         .add_system(handle_input)
         .add_system(update_tooltip)
+		.add_system(update_center)
         .run();
 }
 

@@ -5,6 +5,9 @@ use once_cell::sync::OnceCell;
 
 use super::*;
 
+pub const HARVEST_SPEED: usize = 100;
+pub const MAX_HELIUM: usize = 10;
+
 pub fn add_harvester(
     mut commands: Commands,
     mut textures: ResMut<Assets<Image>>,
@@ -83,9 +86,12 @@ pub fn add_harvester(
 }
 
 pub fn move_harvesters(
-    mut harvesters: Query<(&Cell, &mut Transform, &mut Direction), With<TerrainMarker>>,
+    mut harvesters: Query<(&Cell, &mut Transform, &mut Direction, &Moves), With<TerrainMarker>>,
 ) {
-    for (cell, mut transform, mut direction) in harvesters.iter_mut() {
+    for (cell, mut transform, mut direction, moves) in harvesters.iter_mut() {
+        if !moves.0 {
+            continue;
+        }
         let current_cell = (
             cell.0 .0 as f32 * PIXEL_MULTIPLIER,
             cell.0 .1 as f32 * PIXEL_MULTIPLIER,
@@ -121,6 +127,50 @@ pub fn move_harvesters(
             _ => (),
         }
     }
+}
+
+pub fn update_center(
+    mut centers: Query<
+        (
+            &HarvesterId,
+			&SlotNumber,
+            &mut HarvesterState,
+            &mut HarvestTime,
+            &mut Helium,
+            &mut TooltipString,
+        ),
+        (With<Center>, Without<Harvester>),
+    >,
+    mut harvesters: Query<(&mut Moves, &mut TooltipString), (With<Harvester>, Without<Center>)>,
+) {
+	for (harvester_id, slot, mut state, mut time, mut helium, mut string) in centers.iter_mut() {
+		let (mut harvester, mut harv_string) = harvesters.get_mut(harvester_id.0).unwrap();
+		if helium.0 == MAX_HELIUM {
+			*state = HarvesterState::Full;
+		}
+		match *state {
+			HarvesterState::Work => {
+				time.0 += 1;
+				if time.0 >= HARVEST_SPEED {
+					helium.0 += 1;
+					time.0 = 0;
+				}
+				string.0 = format!("Harvester {}\nStatus: Working\nHelium amount: {}/{}", slot.0, helium.0, MAX_HELIUM);
+				harvester.0 = true;
+				harv_string.0 = "Collecting...".to_string();
+			},
+			HarvesterState::Full => {
+				string.0 = format!("Harvester {}\nStatus: Full\nClick to collect helium", slot.0);
+				harvester.0 = false;
+				harv_string.0 = "Waiting...".to_string();
+			},
+			HarvesterState::Broken => {
+				string.0 = format!("Harvester {}\nStatus: Broken\nClick to repair", slot.0);
+				harvester.0 = false;
+				harv_string.0 = "Waiting...".to_string();
+			},
+		}
+	}
 }
 
 #[derive(Component)]
