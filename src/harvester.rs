@@ -1,9 +1,10 @@
 use std::f32::consts::FRAC_PI_2;
 
 use crate::{
+    panel::PanelMarker,
     terrain::{TerrainMarker, TERRAIN_SIZE},
     tooltip::TooltipString,
-    util::TerrainAssetHandlers,
+    util::{PanelAssetHandlers, TerrainAssetHandlers},
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
@@ -19,7 +20,7 @@ pub fn add_harvester(
     terrain_assets: Res<TerrainAssetHandlers>,
     cell: (i8, i8),
     slot: usize,
-    slot_sprite: Entity
+    slot_sprite: Entity,
 ) {
     let center_coords = (
         cell.0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0
@@ -171,7 +172,9 @@ pub fn update_center(
     >,
     mut harvesters: Query<(&mut Moves, &mut TooltipString), (With<Harvester>, Without<Center>)>,
     terrain_assets: Res<TerrainAssetHandlers>,
+    panel_assets: Res<PanelAssetHandlers>,
     mut lamps: Query<&mut Handle<Image>, With<Lamp>>,
+    mut panel_slots: Query<(&mut Handle<Image>, &SlotNumber), (With<PanelMarker>, Without<Lamp>)>,
 ) {
     for (harvester_id, lamp_id, slot, mut state, mut time, mut helium, mut string, mut breaktime) in
         centers.iter_mut()
@@ -216,6 +219,18 @@ pub fn update_center(
                 *lamp = terrain_assets.center_terrain_lamps[0].0.clone();
             }
         }
+        let Some((mut img, slot_num)) = panel_slots.iter_mut().find(|(_img, slot_num)|slot_num.0 == slot.0) else {
+            return
+        };
+
+        let new_slot_img_idx = match *state {
+            HarvesterState::Work => 1,
+            HarvesterState::Full => 2,
+            HarvesterState::Broken => 3,
+        };
+        *img = panel_assets.harv_slots[slot_num.0][new_slot_img_idx]
+            .0
+            .clone()
     }
 }
 

@@ -57,8 +57,8 @@ pub struct TerrainAssetHandlers {
     pub center_terrain_lamps: [ImgHWithSize; 3],
     pub harvester: ImgHWithSize,
     pub center: ImgHWithSize,
-	// 0 - button, 1 - red lamp, 2 - green lamp
-	pub map_button: [ImgHWithSize; 3],
+    // 0 - button, 1 - red lamp, 2 - green lamp
+    pub map_button: [ImgHWithSize; 3],
 }
 
 #[derive(Resource)]
@@ -68,17 +68,17 @@ pub struct PanelAssetHandlers {
     pub buggy_icon: ImgHWithSize,
     pub harv_icon: ImgHWithSize,
     pub ship: ImgHWithSize,
-	// 3 frames animation
+    // 3 frames animation
     pub space: [ImgHWithSize; 3],
-	// 6 slots, each has 0 - not set, 1 - green, 2 - yellow, 3 - red
+    // 6 slots, each has 0 - not set, 1 - green, 2 - yellow, 3 - red
     pub harv_slots: [[ImgHWithSize; 4]; 6],
     pub exit: ImgHWithSize,
-	// 0 - button, 1 - writing gray, 2 - writing green
+    // 0 - button, 1 - writing gray, 2 - writing green
     pub harvester_button: [ImgHWithSize; 3],
-	// 0 - button, 1 - writing gray, 2 - writing green
+    // 0 - button, 1 - writing gray, 2 - writing green
     pub tank_button: [ImgHWithSize; 3],
     pub helium_level: ImgHWithSize,
-	// 5 tanks
+    // 5 tanks
     pub tanks: [ImgHWithSize; 5],
 }
 
@@ -94,7 +94,7 @@ fn img_handle_and_size_from_bytes(
 
 pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
     let center_terrain_lamps_bytes = include_bytes!("../assets/spritecenter1.aseprite");
-	let button_bytes = include_bytes!("../assets/spritebutton2.aseprite");
+    let button_bytes = include_bytes!("../assets/spritebutton2.aseprite");
 
     commands.insert_resource(TerrainAssetHandlers {
         center_terrain_lamps: ["red", "yellow", "green"].map(|layer_name| {
@@ -110,7 +110,7 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
             "base",
             &mut textures,
         ),
-		map_button: ["buttonup", "red", "green"].map(|layer_name| {
+        map_button: ["buttonup", "red", "green"].map(|layer_name| {
             img_handle_and_size_from_bytes(button_bytes, layer_name, &mut textures)
         }),
     });
@@ -176,11 +176,7 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
                 (textures.add(img), size * PIXEL_MULTIPLIER)
             }),
         ],
-        exit: img_handle_and_size_from_bytes(
-            panel_bytes,
-            "exitup",
-            &mut textures,
-        ),
+        exit: img_handle_and_size_from_bytes(panel_bytes, "exitup", &mut textures),
         harvester_button: ["harvesterup", "harvesteroff", "harvestergreen"].map(|layer_name| {
             let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
             let size = img.size();
@@ -191,11 +187,7 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
             let size = img.size();
             (textures.add(img), size * PIXEL_MULTIPLIER)
         }),
-        helium_level: img_handle_and_size_from_bytes(
-            panel_bytes,
-            "he3",
-            &mut textures,
-        ),
+        helium_level: img_handle_and_size_from_bytes(panel_bytes, "he3", &mut textures),
         tanks: ["tank1", "tank2", "tank3", "tank4", "tank5"].map(|layer_name| {
             let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
             let size = img.size();

@@ -23,8 +23,7 @@ pub fn spawn_tooltip(mut commands: Commands, mut fonts: ResMut<Assets<Font>>) {
 
     commands.spawn((
         Text2dBundle {
-            text: Text::from_section("translation", text_style)
-                .with_alignment(text_alignment),
+            text: Text::from_section("translation", text_style).with_alignment(text_alignment),
             ..default()
         },
         Tooltip,
