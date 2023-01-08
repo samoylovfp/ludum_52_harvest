@@ -13,6 +13,8 @@ mod buggy;
 
 pub const PIXEL_MULTIPLIER: f32 = 5.0;
 pub const CELL_SIZE_TERRAIN: f32 = 40.0;
+pub const WIDTH: f32 = 160.0 * PIXEL_MULTIPLIER;
+pub const HEIGHT: f32 = 120.0 * PIXEL_MULTIPLIER;
 
 fn main() {
     App::new()
@@ -21,8 +23,8 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
                 title: "Moon 2023".to_string(),
-                width: 160.0 * PIXEL_MULTIPLIER,
-                height: 120.0 * PIXEL_MULTIPLIER,
+                width: WIDTH,
+                height: HEIGHT,
                 ..default()
             },
             ..default()

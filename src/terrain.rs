@@ -1,9 +1,11 @@
 use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
-    harvester::{add_harvester, move_harvesters, Center, HarvesterState, Helium, MAX_HELIUM, BreakTime},
+    harvester::{
+        add_harvester, move_harvesters, BreakTime, Center, HarvesterState, Helium, MAX_HELIUM,
+    },
     tooltip::TooltipString,
     util::image_from_aseprite,
-    AppState, PIXEL_MULTIPLIER,
+    AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -65,6 +67,27 @@ fn setup_terrain(
     commands.spawn((Camera2dBundle::default(), TerrainMarker));
     phys.gravity = Vec2 { x: 0.0, y: 0.0 };
 
+    let collider_width = 100.0;
+    let parameters = vec![
+        vec![0.0, size.y / 2.0 + 40.0, size.x, collider_width],
+        vec![0.0, -(size.y / 2.0 + 40.0), size.x, collider_width],
+        vec![size.x / 2.0 + 40.0, 0.0, collider_width, size.y],
+        vec![-(size.x / 2.0 + 40.0), 0.0, collider_width, size.y],
+    ];
+
+    for collider in parameters {
+        commands
+            .spawn(SpriteBundle {
+                sprite: Sprite { ..default() },
+                transform: Transform {
+                    translation: Vec3::new(collider[0], collider[1], 1.0),
+                    ..Default::default()
+                },
+                ..default()
+            })
+            .insert((RigidBody::Fixed, Collider::cuboid(collider[2], collider[3])));
+    }
+
     // FIXME remove this when proper harvester spawning is implemented
     add_harvester(commands, textures, (0, 0), 0);
 }
@@ -80,7 +103,13 @@ fn enable_terrain_cam(
 fn mouse_clicks(
     mut buggy: Query<(&Transform, &mut Helium, &mut TooltipString), (With<Buggy>, Without<Center>)>,
     mut centers: Query<
-        (&Transform, &Sprite, &mut Helium, &mut HarvesterState, &mut BreakTime),
+        (
+            &Transform,
+            &Sprite,
+            &mut Helium,
+            &mut HarvesterState,
+            &mut BreakTime,
+        ),
         (With<Center>, Without<Buggy>),
     >,
     wnds: Res<Windows>,
@@ -128,8 +157,8 @@ fn mouse_clicks(
                             *state = HarvesterState::Work;
                         }
                         HarvesterState::Broken => {
-							let mut rng = thread_rng();
-							breaktime.0 = rng.gen_range(100..1000);
+                            let mut rng = thread_rng();
+                            breaktime.0 = rng.gen_range(100..1000);
                             if helium.0 == MAX_HELIUM {
                                 *state = HarvesterState::Full;
                             } else {
