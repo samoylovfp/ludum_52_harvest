@@ -85,7 +85,7 @@ fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
         Buggy {},
         RigidBody::Dynamic,
         Damping {
-            angular_damping: 0.9,
+            angular_damping: 0.96,
             linear_damping: 0.1,
         },
         Collider::cuboid(6.0 * PIXEL_MULTIPLIER, 10.0 * PIXEL_MULTIPLIER),
@@ -106,8 +106,9 @@ fn buggy_movement_and_control(
 
     let friction = 400.0;
     let max_turn_force = 3000.0;
-    let horse_power_fwd = 10_000.0;
-    let horse_power_back = 2_000.0;
+    let horse_power_fwd = 15_000.0;
+    let horse_power_back = 10_000.0;
+    let steering_centering_force = 2000.0;
 
     if let Ok((vel, mut force, pos)) = buggy.get_single_mut() {
         let buggy_side = pos.rotation
@@ -122,9 +123,9 @@ fn buggy_movement_and_control(
                 y: 1.0,
                 z: 0.0,
             };
-        let turn_force = (vel.linvel.length() * 10_000.0).min(max_turn_force);
+        let turn_force = (vel.linvel.length() * 10.0).min(max_turn_force);
+        force.torque = -vel.angvel * steering_centering_force;
 
-        let mut torque = 0.0;
         let mut acceleration = 0.0;
         force.force = Vec2::default();
 
@@ -135,12 +136,11 @@ fn buggy_movement_and_control(
             acceleration = -horse_power_back;
         }
         if keys.pressed(KeyCode::A) {
-            torque = turn_force;
+            force.torque = turn_force;
         }
         if keys.pressed(KeyCode::D) {
-            torque = -turn_force;
+            force.torque = -turn_force;
         }
-        force.torque = torque;
         force.force += buggy_heading.truncate() * acceleration;
 
         let lateral_force = vel.linvel.project_onto(buggy_side.truncate());
