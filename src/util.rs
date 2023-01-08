@@ -63,7 +63,7 @@ pub struct TerrainAssetHandlers {
 
 #[derive(Resource)]
 pub struct PanelAssetHandlers {
-    // 0 - red, 1 - yellow, 2 - green
+    // green, yellow, red
     pub center_icon: [ImgHWithSize; 3],
     pub buggy_icon: ImgHWithSize,
     pub harv_icon: ImgHWithSize,
@@ -119,7 +119,7 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
     let panel_bytes = include_bytes!("../assets/spritepanel8.aseprite");
 
     commands.insert_resource(PanelAssetHandlers {
-        center_icon: ["red", "yellow", "green"].map(|layer_name| {
+        center_icon: ["green", "yellow", "red"].map(|layer_name| {
             let img = image_from_aseprite_layer_name_frame(center_icon_bytes, layer_name, 0);
             let size = img.size();
             (textures.add(img), size * PIXEL_MULTIPLIER)

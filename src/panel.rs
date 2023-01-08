@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
 use crate::{
-    harvester::{add_harvester, SlotNumber, TotalHarvesters},
+    harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, TotalHarvesters},
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
         TerrainAssetHandlers,
@@ -145,10 +145,10 @@ fn toggle_building(
             commands.spawn((
                 SpriteBundle {
                     sprite: Sprite {
-                        custom_size: Some(panel_assets.center_icon[2].1),
+                        custom_size: Some(panel_assets.center_icon[0].1),
                         ..default()
                     },
-                    texture: panel_assets.center_icon[2].0.clone(),
+                    texture: panel_assets.center_icon[0].0.clone(),
                     ..default()
                 },
                 HarvesterBlueprint,
@@ -168,7 +168,7 @@ fn toggle_building(
 
 #[allow(clippy::too_many_arguments)]
 fn handle_harv_blueprint(
-    commands: Commands,
+    mut commands: Commands,
     mut harv_blueprint: Query<&mut Transform, With<HarvesterBlueprint>>,
     wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
@@ -178,7 +178,7 @@ fn handle_harv_blueprint(
     mut stopper: EventWriter<StopBuildingHarvesters>,
     mut harvesters: ResMut<TotalHarvesters>,
     mut slot_sprites: Query<(Entity, &mut Handle<Image>, &SlotNumber), With<PanelMarker>>,
-    panel_state: Res<PanelState>
+    panel_state: Res<PanelState>,
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
     let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
@@ -197,11 +197,11 @@ fn handle_harv_blueprint(
     let clamped_hovered_cell_coord =
         hovered_cell_coord.clamp(Vec2 { x: 1.0, y: 1.0 }, Vec2 { x: 9.0, y: 6.0 });
 
-    let world_coord = (clamped_hovered_cell_coord + icon_to_panel_center_offset) * step
+    let world_coord_on_panel = (clamped_hovered_cell_coord + icon_to_panel_center_offset) * step
         + icon_to_panel_sprite_offset
         + PANEL_OFFSET.truncate();
 
-    harv_blueprint.for_each_mut(|mut t| t.translation = world_coord.extend(2.0));
+    harv_blueprint.for_each_mut(|mut t| t.translation = world_coord_on_panel.extend(2.0));
     if buttons.just_pressed(MouseButton::Left) && panel_state.building_harvester {
         let (slot_entity, mut slot_image_handler, slot_number) = {
             let s = slot_sprites
@@ -215,6 +215,21 @@ fn handle_harv_blueprint(
 
         *slot_image_handler = panel_assets.harv_slots[slot_number.0][1].0.clone();
 
+        let center_icon = commands
+            .spawn(SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(panel_assets.center_icon[0].1),
+                    ..default()
+                },
+                texture: panel_assets.center_icon[0].0.clone(),
+                transform: Transform {
+                    translation: world_coord_on_panel.extend(1.0),
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
+
         // TODO if placement valid
         add_harvester(
             commands,
@@ -224,7 +239,8 @@ fn handle_harv_blueprint(
                 clamped_hovered_cell_coord.y as i8,
             ),
             harvesters.0,
-            slot_entity,
+            SlotIcon(slot_entity),
+            CenterIcon(center_icon),
         );
         harvesters.0 += 1;
         stopper.send(StopBuildingHarvesters);
