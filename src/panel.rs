@@ -1,7 +1,11 @@
 use std::io::Cursor;
 
-use crate::util::{
-    bevy_image_from_ase_image, get_cursor_pos_in_world_coord, image_from_aseprite_layer_name_frame,
+use crate::{
+    harvester::{add_harvester, TotalHarvesters},
+    util::{
+        bevy_image_from_ase_image, get_cursor_pos_in_world_coord,
+        image_from_aseprite_layer_name_frame,
+    },
 };
 
 use super::*;
@@ -37,10 +41,10 @@ impl Plugin for PanelPlugin {
             .add_system_set(SystemSet::on_enter(AppState::Panel).with_system(enable_panel_cam))
             .add_system_set(
                 SystemSet::on_update(AppState::Panel)
-                    .with_system(build_harvester)
                     .with_system(toggle_building)
-                    .with_system(move_harv_blueprint),
-            );
+                    .with_system(handle_harv_blueprint),
+            )
+            .add_event::<StopBuildingHarvesters>();
     }
 }
 
@@ -113,12 +117,15 @@ fn enable_panel_cam(
     other_cams.for_each_mut(|mut c| c.is_active = false);
 }
 
+struct StopBuildingHarvesters;
+
 fn toggle_building(
     mut commands: Commands,
     mut panel_state: ResMut<PanelState>,
     keys: Res<Input<KeyCode>>,
     panel_assets: Res<PanelAssetHandlers>,
     blueprints: Query<Entity, With<HarvesterBlueprint>>,
+    mut stopper: EventReader<StopBuildingHarvesters>,
 ) {
     if keys.just_pressed(KeyCode::B) {
         panel_state.building_harvester = !panel_state.building_harvester;
@@ -139,13 +146,25 @@ fn toggle_building(
             blueprints.for_each(|b| commands.entity(b).despawn())
         }
     }
+
+    if panel_state.building_harvester
+        && (keys.just_pressed(KeyCode::Escape) || stopper.iter().count() > 0)
+    {
+        blueprints.for_each(|b| commands.entity(b).despawn());
+        panel_state.building_harvester = false;
+    }
 }
 
-fn move_harv_blueprint(
+#[allow(clippy::too_many_arguments)]
+fn handle_harv_blueprint(
+    commands: Commands,
     mut harv_blueprint: Query<&mut Transform, With<HarvesterBlueprint>>,
     wnds: Res<Windows>,
+    textures: ResMut<Assets<Image>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<Input<MouseButton>>,
+    mut stopper: EventWriter<StopBuildingHarvesters>,
+    mut harvesters: ResMut<TotalHarvesters>,
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
     let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
@@ -169,10 +188,19 @@ fn move_harv_blueprint(
         + PANEL_OFFSET.truncate();
 
     harv_blueprint.for_each_mut(|mut t| t.translation = world_coord.extend(2.0));
-}
 
-fn build_harvester(panel_state: ResMut<PanelState>) {
-    if !panel_state.building_harvester {
-        return;
+    if buttons.just_pressed(MouseButton::Left) {
+        // TODO if placement valid
+        add_harvester(
+            commands,
+            textures,
+            (
+                clamped_hovered_cell_coord.x as i8,
+                clamped_hovered_cell_coord.y as i8,
+            ),
+            harvesters.0,
+        );
+        harvesters.0 += 1;
+        stopper.send(StopBuildingHarvesters);
     }
 }

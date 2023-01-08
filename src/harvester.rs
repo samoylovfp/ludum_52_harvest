@@ -232,3 +232,6 @@ pub enum HarvesterState {
     Full,
     Broken,
 }
+
+#[derive(Resource)]
+pub struct TotalHarvesters(pub usize);

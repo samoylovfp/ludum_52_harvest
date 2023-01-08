@@ -1,7 +1,7 @@
 use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
     harvester::{
-        add_harvester, move_harvesters, BreakTime, Center, HarvesterState, Helium, MAX_HELIUM,
+        move_harvesters, BreakTime, Center, HarvesterState, Helium, TotalHarvesters, MAX_HELIUM,
     },
     tooltip::TooltipString,
     util::image_from_aseprite,
@@ -92,8 +92,7 @@ fn setup_terrain(
             .insert((RigidBody::Fixed, Collider::cuboid(collider[2], collider[3])));
     }
 
-    // FIXME remove this when proper harvester spawning is implemented
-    add_harvester(commands, textures, (0, 0), 0);
+    commands.insert_resource(TotalHarvesters(0));
 }
 
 fn enable_terrain_cam(
