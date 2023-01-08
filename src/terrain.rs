@@ -13,6 +13,7 @@ use once_cell::sync::OnceCell;
 use rand::{thread_rng, Rng};
 
 pub const COLLECT_DISTANCE: f32 = 500.0;
+pub const TERRAIN_SIZE: (f32, f32) = (440.0 * PIXEL_MULTIPLIER, 320.0 * PIXEL_MULTIPLIER);
 
 #[derive(Component)]
 pub struct TerrainMarker;

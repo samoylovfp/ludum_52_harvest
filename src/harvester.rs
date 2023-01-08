@@ -1,7 +1,7 @@
 use std::f32::consts::FRAC_PI_2;
 
 use crate::{
-    terrain::TerrainMarker,
+    terrain::{TerrainMarker, TERRAIN_SIZE},
     tooltip::TooltipString,
     util::{image_from_aseprite, TerrainAssetHandlers},
 };
@@ -23,8 +23,8 @@ pub fn add_harvester(
     slot: usize,
 ) {
     let center_coords = (
-        cell.0 as f32 * PIXEL_MULTIPLIER,
-        cell.1 as f32 * PIXEL_MULTIPLIER,
+        cell.0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+        cell.1 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.1 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
     );
 
     let mut rng = thread_rng();
@@ -114,8 +114,8 @@ pub fn move_harvesters(
             continue;
         }
         let current_cell = (
-            cell.0 .0 as f32 * PIXEL_MULTIPLIER,
-            cell.0 .1 as f32 * PIXEL_MULTIPLIER,
+			cell.0.0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+			cell.0.1 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.1 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
         );
         match *direction {
             Direction::Up => transform.translation.y += 1.0,
