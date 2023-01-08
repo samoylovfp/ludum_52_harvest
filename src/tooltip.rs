@@ -33,7 +33,7 @@ pub fn update_tooltip(
     mut tooltip: Query<(&mut Transform, &mut Text), (With<Tooltip>, Without<TooltipString>)>,
     wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
-    objects: Query<(&Transform, &TooltipString), With<TooltipString>>,
+    objects: Query<(&Transform, &Sprite, &TooltipString), With<TooltipString>>,
 ) {
     let (mut tooltip, mut text) = tooltip.single_mut();
 
@@ -66,12 +66,12 @@ pub fn update_tooltip(
 
     text.sections[0].value = "".to_string();
 
-    for (object, string) in objects.iter() {
+    for (object, sprite, string) in objects.iter() {
         if collide(
             object.translation,
             Vec2 {
-                x: 15.0 * PIXEL_MULTIPLIER,
-                y: 15.0 * PIXEL_MULTIPLIER,
+                x: sprite.custom_size.unwrap().x,
+                y: sprite.custom_size.unwrap().y,
             },
             world_pos,
             Vec2 { x: 1.0, y: 1.0 },
