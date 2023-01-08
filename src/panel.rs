@@ -142,6 +142,24 @@ fn set_up_panel(
             texture: panel_assets.exit.0.clone(),
             ..default()
         })
+        .insert(PanelMarker);
+
+	commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+            	custom_size: Some(Vec2::new(17.0 * PIXEL_MULTIPLIER, 11.0 * PIXEL_MULTIPLIER)),
+                ..default()
+            },
+			transform: Transform {
+                translation: Vec3 {
+                    x: PANEL_OFFSET.x - WIDTH / 2.0 + 11.0 * PIXEL_MULTIPLIER,
+                    y: PANEL_OFFSET.y + HEIGHT / 2.0 - 8.0 * PIXEL_MULTIPLIER,
+                    z: -100.0,
+                },
+                ..default()
+            },
+            ..default()
+        })
         .insert(TerrainButton)
         .insert(PanelMarker);
 }
