@@ -82,7 +82,7 @@ pub struct PanelAssetHandlers {
     pub tanks: [ImgHWithSize; 5],
 }
 
-fn img_handle_and_size_from_bytes(
+pub fn img_handle_and_size_from_bytes(
     b: &[u8],
     layer_name: &str,
     textures: &mut ResMut<Assets<Image>>,

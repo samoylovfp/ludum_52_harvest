@@ -53,7 +53,7 @@ fn despawn_start(mut commands: Commands, start_entities: Query<Entity, With<Star
 pub fn set_timer(mut commands: Commands, time: Res<Time>) {
     commands.spawn((
         EndTimer {
-            timer: Timer::new(Duration::from_secs(60), TimerMode::Once),
+            timer: Timer::new(Duration::from_secs(120), TimerMode::Once),
         },
         TerrainMarker,
     ));
