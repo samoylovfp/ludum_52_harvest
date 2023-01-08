@@ -16,6 +16,7 @@ use rand::{thread_rng, Rng};
 pub const COLLECT_DISTANCE: f32 = 500.0;
 pub const TERRAIN_SIZE: (f32, f32) = (440.0 * PIXEL_MULTIPLIER, 320.0 * PIXEL_MULTIPLIER);
 pub const MAX_HELIUM_STORAGE: usize = 20;
+pub const HELIUM_TO_BUILD_HARVESTER: usize = MAX_HELIUM_STORAGE / 2;
 
 #[derive(Component)]
 pub struct TerrainMarker;

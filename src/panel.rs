@@ -4,11 +4,12 @@ use bevy::{render::camera::RenderTarget, sprite::collide_aabb::collide};
 
 use crate::{
     buggy::Buggy,
-    harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, TotalHarvesters, StorageHelium},
+    harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, StorageHelium, TotalHarvesters},
+    terrain::{HELIUM_TO_BUILD_HARVESTER, MAX_HELIUM_STORAGE},
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
         TerrainAssetHandlers,
-    }, terrain::MAX_HELIUM_STORAGE,
+    },
 };
 
 use super::*;
@@ -41,7 +42,13 @@ struct TankLevel;
 struct HarvesterBlueprint;
 
 #[derive(Component)]
-pub struct TerrainButton;
+pub struct SwitchToTerrainButton;
+
+#[derive(Component)]
+pub struct HarvesterButtonText;
+
+#[derive(Component)]
+pub struct BuildHarvesterButtonSensor;
 
 impl Plugin for PanelPlugin {
     fn build(&self, app: &mut App) {
@@ -55,7 +62,8 @@ impl Plugin for PanelPlugin {
                     .with_system(mouse_clicks_panel)
                     .with_system(update_tank_level),
             )
-            .add_event::<StopBuildingHarvesters>();
+            .add_event::<StopBuildingHarvesters>()
+            .add_event::<EnterBuildingHarvestersMode>();
     }
 }
 
@@ -182,8 +190,69 @@ fn set_up_panel(
             },
             ..default()
         })
-        .insert(TerrainButton)
+        .insert(SwitchToTerrainButton)
         .insert(PanelMarker);
+
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(panel_assets.harvester_button[0].1),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    z: 1.0,
+                    ..PANEL_OFFSET
+                },
+                ..default()
+            },
+            texture: panel_assets.harvester_button[0].0.clone(),
+            ..default()
+        })
+        .insert(PanelMarker);
+
+    commands.spawn((
+        BuildHarvesterButtonSensor,
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(42.0 * PIXEL_MULTIPLIER, 9.0 * PIXEL_MULTIPLIER)),
+                color: Color::rgba(0.0, 1.0, 1.0, 0.0),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    x: PANEL_OFFSET.x - WIDTH / 2.0 + 135.0 * PIXEL_MULTIPLIER,
+                    y: PANEL_OFFSET.y + HEIGHT / 2.0 - 77.5 * PIXEL_MULTIPLIER,
+                    z: 3.0,
+                },
+                ..default()
+            },
+            ..default()
+        },
+        PanelMarker,
+    ));
+
+    commands
+        .spawn((
+            HarvesterButtonText,
+            SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(panel_assets.harvester_button[1].1),
+                    ..default()
+                },
+                transform: Transform {
+                    translation: Vec3 {
+                        z: 2.0,
+                        ..PANEL_OFFSET
+                    },
+                    ..default()
+                },
+                texture: panel_assets.harvester_button[1].0.clone(),
+                ..default()
+            },
+        ))
+        .insert(PanelMarker);
+
     commands.spawn((
         BuggyIcon,
         SpriteBundle {
@@ -231,6 +300,7 @@ fn enable_panel_cam(
 }
 
 struct StopBuildingHarvesters;
+struct EnterBuildingHarvestersMode;
 
 fn toggle_building(
     mut commands: Commands,
@@ -239,8 +309,9 @@ fn toggle_building(
     panel_assets: Res<PanelAssetHandlers>,
     blueprints: Query<Entity, With<HarvesterBlueprint>>,
     mut stopper: EventReader<StopBuildingHarvesters>,
+    mut starter: EventReader<EnterBuildingHarvestersMode>,
 ) {
-    if keys.just_pressed(KeyCode::B) {
+    if keys.just_pressed(KeyCode::B) || starter.iter().count() > 0 {
         panel_state.building_harvester = !panel_state.building_harvester;
 
         if panel_state.building_harvester {
@@ -281,6 +352,7 @@ fn handle_harv_blueprint(
     mut harvesters: ResMut<TotalHarvesters>,
     mut slot_sprites: Query<(Entity, &mut Handle<Image>, &SlotNumber), With<PanelMarker>>,
     panel_state: Res<PanelState>,
+    mut helium: ResMut<StorageHelium>,
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
     let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
@@ -318,6 +390,11 @@ fn handle_harv_blueprint(
             .id();
 
         // TODO if placement valid
+        if helium.0 < HELIUM_TO_BUILD_HARVESTER {
+            stopper.send(StopBuildingHarvesters);
+            return;
+        }
+        helium.0 -= HELIUM_TO_BUILD_HARVESTER;
         add_harvester(
             commands,
             terrain_assets,
@@ -331,12 +408,16 @@ fn handle_harv_blueprint(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn mouse_clicks_panel(
     wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     mut buttons: ResMut<Input<MouseButton>>,
     mut app_state: ResMut<State<AppState>>,
-    terrain_button: Query<(&Transform, &Sprite), With<TerrainButton>>,
+    terrain_button: Query<(&Transform, &Sprite), With<SwitchToTerrainButton>>,
+    harvester_button: Query<(&Transform, &Sprite), With<BuildHarvesterButtonSensor>>,
+    helium: Res<StorageHelium>,
+    mut building_starter: EventWriter<EnterBuildingHarvestersMode>,
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
 
@@ -347,6 +428,7 @@ fn mouse_clicks_panel(
     };
 
     if buttons.just_pressed(MouseButton::Left) {
+        let cursor_collider = Vec2 { x: 1.0, y: 1.0 };
         if let Some(screen_pos) = wnd.cursor_position() {
             let window_size = Vec2::new(wnd.width(), wnd.height());
             let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
@@ -363,14 +445,27 @@ fn mouse_clicks_panel(
                     y: button_sprite.custom_size.unwrap().y,
                 },
                 world_pos,
-                Vec2 { x: 1.0, y: 1.0 },
+                cursor_collider,
             )
             .is_some()
             {
                 app_state.set(AppState::Terrain).unwrap();
                 buttons.clear();
-                #[allow(clippy::needless_return)]
                 return;
+            }
+
+            let (new_harv_but_pos, new_harv_sprite) = harvester_button.single();
+            if collide(
+                new_harv_but_pos.translation,
+                new_harv_sprite.custom_size.unwrap(),
+                world_pos,
+                cursor_collider,
+            )
+            .is_some()
+                && helium.0 >= HELIUM_TO_BUILD_HARVESTER
+            {
+                building_starter.send(EnterBuildingHarvestersMode);
+                buttons.clear();
             }
         }
     }
@@ -418,9 +513,10 @@ fn panel_coord_to_cell_and_snapped_panel_world_coord(world_coord: Vec2) -> ((i8,
 
 fn update_tank_level(
     mut tank: Query<(&mut Sprite, &mut Transform), With<TankLevel>>,
-    helium: Res<StorageHelium>
+    helium: Res<StorageHelium>,
+    mut button: Query<&mut Handle<Image>, With<HarvesterButtonText>>,
+    panel_assets: Res<PanelAssetHandlers>,
 ) {
-    
     let max_tank_height_px = 20.0;
     let progress = helium.0 as f32 / MAX_HELIUM_STORAGE as f32;
     let height = (max_tank_height_px * progress).round();
@@ -429,4 +525,9 @@ fn update_tank_level(
 
     transform.translation.y = tank_center().y - (10.0 - height / 2.0) * PIXEL_MULTIPLIER;
     sprite.custom_size.as_mut().unwrap().y = height * PIXEL_MULTIPLIER;
+    let button_text_img_idx = match helium.0 >= HELIUM_TO_BUILD_HARVESTER {
+        true => 2,
+        false => 1,
+    };
+    *button.single_mut() = panel_assets.harvester_button[button_text_img_idx].0.clone();
 }
