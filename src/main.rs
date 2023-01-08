@@ -29,7 +29,7 @@ fn main() {
         }))
         .add_plugin(start::StartPlugin)
         .add_plugin(terrain::TerrainPlugin)
-        .add_plugin(panel::Panel)
+        .add_plugin(panel::PanelPlugin)
         .add_plugin(finish::Finish)
         .add_startup_system(spawn_tooltip)
         .add_system(handle_input)

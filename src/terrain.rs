@@ -33,6 +33,7 @@ fn setup_terrain(
     mut textures: ResMut<Assets<Image>>,
     mut phys: ResMut<RapierConfiguration>,
 ) {
+    //FIXME filsam: reduce boilerplate
     static TERRAIN_IMAGE_CELL: OnceCell<Image> = OnceCell::new();
     static TERRAIN_TEXTURE_HANDLE_CELL: OnceCell<Handle<Image>> = OnceCell::new();
 

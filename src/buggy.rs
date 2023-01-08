@@ -43,7 +43,7 @@ pub fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
 #[allow(clippy::type_complexity)]
 pub fn buggy_movement_and_control(
     mut buggy: Query<(&Velocity, &mut ExternalForce, &Transform), (With<Buggy>, Without<Camera2d>)>,
-    mut camera: Query<&mut Transform, With<Camera2d>>,
+    mut camera: Query<&mut Transform, (With<TerrainMarker>, With<Camera2d>)>,
     keys: Res<Input<KeyCode>>,
     state: Res<State<AppState>>,
 ) {
