@@ -6,6 +6,8 @@ Code: [samoylovfp](https://github.com/samoylovfp), [ladymarengo](https://github.
 
 Art: [SCHI85](https://github.com/SCHI85)
 
+Music: [demoth](https://github.com/demoth)
+
 You can play it [HERE](https://samoylovfp.github.io/ludum_52_harvest/). Instructions are below.
 
 ![demo](demo.webp)
