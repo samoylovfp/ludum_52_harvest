@@ -2,7 +2,7 @@ use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
     harvester::{
         move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, TotalHarvesters,
-        MAX_HELIUM,
+        MAX_HELIUM, Canisters,
     },
     tooltip::TooltipString,
     util::{image_from_aseprite, TerrainAssetHandlers},
@@ -146,6 +146,7 @@ fn setup_terrain(
 
     commands.insert_resource(TotalHarvesters(0));
     commands.insert_resource(StorageHelium(MAX_HELIUM_STORAGE - 1));
+	commands.insert_resource(Tanks(0));
 }
 
 fn enable_terrain_cam(
