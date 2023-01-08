@@ -1,5 +1,9 @@
+use std::io::Cursor;
+
 use bevy::prelude::*;
+use bevy_kira_audio::{Audio, AudioControl, AudioPlugin, AudioSource};
 use harvester::update_center;
+use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
 use tooltip::update_tooltip;
 use util::load_assets;
 
@@ -34,11 +38,13 @@ fn main() {
         .add_plugin(terrain::TerrainPlugin)
         .add_plugin(panel::PanelPlugin)
         .add_plugin(finish::Finish)
+        .add_plugin(AudioPlugin)
         // .add_startup_system(spawn_tooltip)
         .add_system(handle_input)
         .add_system(update_tooltip)
         .add_system(update_center)
         .add_startup_system(load_assets)
+        .add_startup_system(music)
         .run();
 }
 
@@ -54,6 +60,16 @@ fn handle_input(keys: Res<Input<KeyCode>>, mut app_state: ResMut<State<AppState>
             })
             .unwrap()
     }
+}
+
+fn music(audio: Res<Audio>, mut source: ResMut<Assets<AudioSource>>) {
+    let data = StaticSoundData::from_cursor(
+        Cursor::new(include_bytes!("../assets/theme.ogg")),
+        StaticSoundSettings::default(),
+    )
+    .unwrap();
+    let handle = source.add(AudioSource { sound: data });
+    audio.play(handle).with_volume(0.2).looped();
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
