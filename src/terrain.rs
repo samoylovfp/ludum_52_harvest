@@ -6,7 +6,7 @@ use crate::{
     },
     tooltip::TooltipString,
     util::{image_from_aseprite, TerrainAssetHandlers},
-    AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
+    AppState, CELL_SIZE_TERRAIN, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -15,6 +15,7 @@ use rand::{thread_rng, Rng};
 
 pub const COLLECT_DISTANCE: f32 = 500.0;
 pub const TERRAIN_SIZE: (f32, f32) = (440.0 * PIXEL_MULTIPLIER, 320.0 * PIXEL_MULTIPLIER);
+pub const MAX_HELIUM_STORAGE: usize = 20;
 
 #[derive(Component)]
 pub struct TerrainMarker;
@@ -24,6 +25,9 @@ pub struct TerrainSprite;
 
 #[derive(Component)]
 pub struct MapButton;
+
+#[derive(Component)]
+pub struct Base;
 
 pub struct TerrainPlugin;
 
@@ -113,6 +117,30 @@ fn setup_terrain(
         .insert(MapButton)
         .insert(TerrainMarker);
 
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+				// color: Color::RED,
+                custom_size: Some(Vec2::new(
+                    CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER,
+                    CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER,
+                )),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(
+                    TERRAIN_SIZE.0 / 2.0 - CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+                    CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+                    1.0,
+                ),
+                ..Default::default()
+            },
+            ..default()
+        })
+        .insert(Base)
+		.insert(TooltipString("Base".to_string()))
+        .insert(TerrainMarker);
+
     commands.insert_resource(TotalHarvesters(0));
     commands.insert_resource(StorageHelium(0));
 }
@@ -143,6 +171,7 @@ fn mouse_clicks(
     mut buttons: ResMut<Input<MouseButton>>,
     mut app_state: ResMut<State<AppState>>,
     map_button: Query<(&Transform, &Sprite), With<MapButton>>,
+	base: Query<&Transform, With<Base>>,
 ) {
     let (buggy, mut storage, mut buggy_string) = buggy.single_mut();
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
@@ -175,9 +204,11 @@ fn mouse_clicks(
             .is_some()
             {
                 app_state.set(AppState::Panel).unwrap();
-				buttons.clear();
-				return ;
+                buttons.clear();
+                return;
             }
+
+			let base = base.single();
 
             for (center, sprite, mut helium, mut state, mut breaktime) in centers.iter_mut() {
                 if collide(
