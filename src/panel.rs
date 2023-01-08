@@ -1,48 +1,75 @@
-use once_cell::sync::OnceCell;
+use std::io::Cursor;
 
-use crate::util::image_from_aseprite;
+use crate::util::{
+    bevy_image_from_ase_image, get_cursor_pos_in_world_coord, image_from_aseprite,
+    image_from_aseprite_layer_name_frame,
+};
 
 use super::*;
+
+pub const PANEL_OFFSET: Vec3 = Vec3 {
+    x: 100_000.0,
+    y: 100_000.0,
+    z: 0.0,
+};
 
 #[derive(Component)]
 pub struct PanelMarker;
 
 pub struct PanelPlugin;
 
+#[derive(Resource)]
+struct PanelAssetHandlers {
+    // 0 - red, 1 - yellow, 2 - green
+    center_icon: [(Handle<Image>, Vec2); 3],
+}
+
+#[derive(Resource)]
+struct PanelState {
+    building_harvester: bool,
+}
+
+#[derive(Component)]
+struct HarvesterBlueprint;
+
 impl Plugin for PanelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_exit(AppState::Start).with_system(spawn_panel))
-            .add_system_set(SystemSet::on_enter(AppState::Panel).with_system(enable_panel_cam));
+        app.add_system_set(SystemSet::on_exit(AppState::Start).with_system(set_up_panel))
+            .add_system_set(SystemSet::on_enter(AppState::Panel).with_system(enable_panel_cam))
+            .add_system_set(
+                SystemSet::on_update(AppState::Panel)
+                    .with_system(build_harvester)
+                    .with_system(toggle_building)
+                    .with_system(move_harv_blueprint),
+            );
     }
 }
 
-fn spawn_panel(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
-    static PANEL_IMAGE_CELL: OnceCell<Image> = OnceCell::new();
-    static PANEL_TEXTURE_HANDLE_CELL: OnceCell<Handle<Image>> = OnceCell::new();
-    let panel_offset = Vec3 {
-        x: 100_000.0,
-        y: 100_000.0,
-        z: 0.0,
-    };
+fn set_up_panel(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
+    let ase_file = asefile::AsepriteFile::read(Cursor::new(include_bytes!(
+        "../assets/spritepanel8.aseprite"
+    )))
+    .expect("valid aseprite");
+    let main_panel = bevy_image_from_ase_image(
+        ase_file
+            .layer_by_name("main")
+            .expect("main layer")
+            .frame(0)
+            .image(),
+    );
 
-    let panel_image = PANEL_IMAGE_CELL.get_or_init(|| {
-        image_from_aseprite(include_bytes!("../assets/spritepanel8.aseprite"), "main")
-    });
-    let panel_texture_handle =
-        PANEL_TEXTURE_HANDLE_CELL.get_or_init(|| textures.add(panel_image.clone()));
-
-    let size = panel_image.size() * PIXEL_MULTIPLIER;
+    let panel_size = main_panel.size() * PIXEL_MULTIPLIER;
 
     commands.spawn(SpriteBundle {
         sprite: Sprite {
-            custom_size: Some(size),
+            custom_size: Some(panel_size),
             ..default()
         },
         transform: Transform {
-            translation: panel_offset,
+            translation: PANEL_OFFSET,
             ..default()
         },
-        texture: panel_texture_handle.clone(),
+        texture: textures.add(main_panel),
         ..default()
     });
     commands.spawn((
@@ -53,8 +80,8 @@ fn spawn_panel(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
             },
             transform: Transform {
                 translation: Vec3 {
-                    x: panel_offset.x,
-                    y: panel_offset.y,
+                    x: PANEL_OFFSET.x,
+                    y: PANEL_OFFSET.y,
                     z: 100.0,
                 },
                 ..default()
@@ -63,6 +90,20 @@ fn spawn_panel(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
         },
         PanelMarker,
     ));
+
+    commands.insert_resource(PanelState {
+        building_harvester: false,
+    });
+
+    let center_icon_bytes = include_bytes!("../assets/iconcenter3.aseprite");
+
+    commands.insert_resource(PanelAssetHandlers {
+        center_icon: ["red", "yellow", "green"].map(|layer_name| {
+            let img = image_from_aseprite_layer_name_frame(center_icon_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+    });
 }
 
 fn enable_panel_cam(
@@ -71,4 +112,67 @@ fn enable_panel_cam(
 ) {
     panel_cam.for_each_mut(|mut c| c.is_active = true);
     other_cams.for_each_mut(|mut c| c.is_active = false);
+}
+
+fn toggle_building(
+    mut commands: Commands,
+    mut panel_state: ResMut<PanelState>,
+    keys: Res<Input<KeyCode>>,
+    panel_assets: Res<PanelAssetHandlers>,
+    blueprints: Query<Entity, With<HarvesterBlueprint>>,
+) {
+    if keys.just_pressed(KeyCode::B) {
+        panel_state.building_harvester = !panel_state.building_harvester;
+    }
+    if panel_state.building_harvester {
+        commands.spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(panel_assets.center_icon[2].1),
+                    ..default()
+                },
+                texture: panel_assets.center_icon[2].0.clone(),
+                ..default()
+            },
+            HarvesterBlueprint,
+        ));
+    } else {
+        blueprints.for_each(|b| commands.entity(b).despawn())
+    }
+}
+
+fn move_harv_blueprint(
+    mut harv_blueprint: Query<&mut Transform, With<HarvesterBlueprint>>,
+    wnds: Res<Windows>,
+    q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+    keys: Res<Input<KeyCode>>,
+) {
+    let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
+    let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
+
+    let step = 10.0 * PIXEL_MULTIPLIER;
+    let icon_to_panel_sprite_offset = Vec2 { x: 5.5, y: 5.5 } * PIXEL_MULTIPLIER;
+    let icon_to_panel_center_offset = Vec2 { x: -8.0, y: -6.0 };
+
+    let cell_on_panel = ((world_cursor_pos - icon_to_panel_sprite_offset) / step).round() * step
+        + icon_to_panel_sprite_offset;
+
+    let hovered_cell_coord =
+        (cell_on_panel - PANEL_OFFSET.truncate() - icon_to_panel_sprite_offset) / step
+            - icon_to_panel_center_offset;
+
+    let clamped_hovered_cell_coord =
+        hovered_cell_coord.clamp(Vec2 { x: 1.0, y: 1.0 }, Vec2 { x: 9.0, y: 6.0 });
+
+    let world_coord = (clamped_hovered_cell_coord + icon_to_panel_center_offset) * step
+        + icon_to_panel_sprite_offset
+        + PANEL_OFFSET.truncate();
+
+    harv_blueprint.for_each_mut(|mut t| t.translation = world_coord.extend(2.0));
+}
+
+fn build_harvester(panel_state: ResMut<PanelState>) {
+    if !panel_state.building_harvester {
+        return;
+    }
 }
