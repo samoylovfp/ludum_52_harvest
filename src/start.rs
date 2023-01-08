@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 
-use crate::AppState;
+use crate::{terrain::TerrainMarker, AppState};
 
 #[derive(Component)]
 pub struct StartMarker;
@@ -46,4 +48,34 @@ fn spawn_start(mut commands: Commands, mut fonts: ResMut<Assets<Font>>) {
 
 fn despawn_start(mut commands: Commands, start_entities: Query<Entity, With<StartMarker>>) {
     start_entities.for_each(|e| commands.entity(e).despawn());
+}
+
+pub fn set_timer(mut commands: Commands, time: Res<Time>) {
+    commands.spawn((
+        EndTimer {
+            timer: Timer::new(Duration::from_secs(5), TimerMode::Once),
+        },
+        TerrainMarker,
+    ));
+}
+
+pub fn check_end(
+    mut timer: Query<&mut EndTimer>,
+    time: Res<Time>,
+    mut app_state: ResMut<State<AppState>>,
+) {
+	if timer.is_empty() {
+		return ;
+	}
+    let mut timer = timer.single_mut();
+    timer.timer.tick(time.delta());
+	println!("{}", timer.timer.remaining_secs());
+    if timer.timer.finished() {
+        app_state.set(AppState::Finish).unwrap();
+    }
+}
+
+#[derive(Component)]
+pub struct EndTimer {
+    timer: Timer,
 }

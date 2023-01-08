@@ -4,9 +4,9 @@ use crate::{
         move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, TotalHarvesters,
         MAX_HELIUM, Tanks,
     },
-    tooltip::TooltipString,
+    tooltip::{TooltipString, spawn_tooltip},
     util::{image_from_aseprite, TerrainAssetHandlers},
-    AppState, CELL_SIZE_TERRAIN, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
+    AppState, CELL_SIZE_TERRAIN, HEIGHT, PIXEL_MULTIPLIER, WIDTH, start::{set_timer, check_end},
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -37,7 +37,9 @@ impl Plugin for TerrainPlugin {
         app.add_system_set(
             SystemSet::on_exit(AppState::Start)
                 .with_system(setup_terrain)
-                .with_system(setup_buggy),
+                .with_system(setup_buggy)
+				.with_system(set_timer)
+				.with_system(spawn_tooltip),
         )
         .add_system_set(
             SystemSet::on_update(AppState::Terrain)
@@ -47,6 +49,7 @@ impl Plugin for TerrainPlugin {
         )
         .add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(enable_terrain_cam))
         .add_system(move_harvesters)
+		// .add_system(check_end)
         .add_system(buggy_movement_and_control)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(12.0));
         // .add_plugin(RapierDebugRenderPlugin::default());

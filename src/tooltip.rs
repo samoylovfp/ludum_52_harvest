@@ -37,6 +37,9 @@ pub fn update_tooltip(
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     objects: Query<(&Transform, &Sprite, &TooltipString), With<TooltipString>>,
 ) {
+	if tooltip.is_empty() {
+		return ;
+	}
     let (mut tooltip, mut text) = tooltip.single_mut();
 
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
