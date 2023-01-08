@@ -1,10 +1,10 @@
 use std::io::Cursor;
 
 use crate::{
-    harvester::{add_harvester, TotalHarvesters},
+    harvester::{add_harvester, SlotNumber, TotalHarvesters},
     util::{
-        bevy_image_from_ase_image, get_cursor_pos_in_world_coord,
-        PanelAssetHandlers, TerrainAssetHandlers,
+        bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
+        TerrainAssetHandlers,
     },
 };
 
@@ -96,23 +96,27 @@ fn set_up_panel(
         building_harvester: false,
     });
 
-    for slot in &panel_assets.harv_slots {
+    for (i, slot) in panel_assets.harv_slots.iter().enumerate() {
         let empty = &slot[0];
-        commands.spawn(SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(empty.1),
-                ..default()
-            },
-            transform: Transform {
-                translation: Vec3 {
-                    z: 1.0,
-                    ..PANEL_OFFSET
+        commands.spawn((
+            PanelMarker,
+            SlotNumber(i),
+            SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(empty.1),
+                    ..default()
                 },
+                transform: Transform {
+                    translation: Vec3 {
+                        z: 1.0,
+                        ..PANEL_OFFSET
+                    },
+                    ..default()
+                },
+                texture: empty.0.clone(),
                 ..default()
             },
-            texture: empty.0.clone(),
-            ..default()
-        });
+        ));
     }
 }
 
@@ -170,8 +174,10 @@ fn handle_harv_blueprint(
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     buttons: Res<Input<MouseButton>>,
     terrain_assets: Res<TerrainAssetHandlers>,
+    panel_assets: Res<PanelAssetHandlers>,
     mut stopper: EventWriter<StopBuildingHarvesters>,
     mut harvesters: ResMut<TotalHarvesters>,
+    mut slot_sprites: Query<(Entity, &mut Handle<Image>, &SlotNumber), With<PanelMarker>>,
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
     let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
@@ -197,6 +203,18 @@ fn handle_harv_blueprint(
     harv_blueprint.for_each_mut(|mut t| t.translation = world_coord.extend(2.0));
 
     if buttons.just_pressed(MouseButton::Left) {
+        let (slot_entity, mut slot_image_handler, slot_number) = {
+            let s = slot_sprites
+                .iter_mut()
+                .find(|(_e, _h, slot_number)| slot_number.0 == harvesters.0);
+            match s {
+                Some(s) => s,
+                None => slot_sprites.iter_mut().last().unwrap(),
+            }
+        };
+
+        *slot_image_handler = panel_assets.harv_slots[slot_number.0][1].0.clone();
+
         // TODO if placement valid
         add_harvester(
             commands,
@@ -206,6 +224,7 @@ fn handle_harv_blueprint(
                 clamped_hovered_cell_coord.y as i8,
             ),
             harvesters.0,
+            slot_entity,
         );
         harvesters.0 += 1;
         stopper.send(StopBuildingHarvesters);

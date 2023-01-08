@@ -19,6 +19,7 @@ pub fn add_harvester(
     terrain_assets: Res<TerrainAssetHandlers>,
     cell: (i8, i8),
     slot: usize,
+    slot_sprite: Entity
 ) {
     let center_coords = (
         cell.0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0
@@ -93,6 +94,7 @@ pub fn add_harvester(
         .insert(Center)
         .insert(BreakTime(rng.gen_range(100..1000)))
         .insert(HarvesterId(harvester_id))
+        .insert(SlotSprite(slot_sprite))
         .insert(LampId(lamp_id))
         .insert(HarvesterState::Work)
         .insert(HarvestTime(0))
@@ -238,10 +240,13 @@ pub enum Direction {
 pub struct Center;
 
 #[derive(Component)]
-pub struct SlotNumber(usize);
+pub struct SlotNumber(pub usize);
 
 #[derive(Component)]
 pub struct HarvesterId(Entity);
+
+#[derive(Component)]
+pub struct SlotSprite(Entity);
 
 #[derive(Component)]
 pub struct LampId(Entity);
