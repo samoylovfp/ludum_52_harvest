@@ -53,7 +53,7 @@ fn despawn_start(mut commands: Commands, start_entities: Query<Entity, With<Star
 pub fn set_timer(mut commands: Commands, time: Res<Time>) {
     commands.spawn((
         EndTimer {
-            timer: Timer::new(Duration::from_secs(5), TimerMode::Once),
+            timer: Timer::new(Duration::from_secs(60), TimerMode::Once),
         },
         TerrainMarker,
     ));
@@ -69,7 +69,7 @@ pub fn check_end(
 	}
     let mut timer = timer.single_mut();
     timer.timer.tick(time.delta());
-	println!("{}", timer.timer.remaining_secs());
+	// println!("{}", timer.timer.remaining_secs());
     if timer.timer.finished() {
         app_state.set(AppState::Finish).unwrap();
     }
@@ -77,5 +77,5 @@ pub fn check_end(
 
 #[derive(Component)]
 pub struct EndTimer {
-    timer: Timer,
+    pub timer: Timer,
 }

@@ -8,7 +8,10 @@ use crate::{
         add_harvester, CenterIcon, SlotIcon, SlotNumber, StorageHelium, StoredCanisters,
         TotalHarvesters,
     },
-    terrain::{HELIUM_TO_BUILD_HARVESTER, HELIUM_TO_MAKE_CANISTER, MAX_HELIUM_STORAGE, CANISTERS_TO_WIN},
+    start::EndTimer,
+    terrain::{
+        CANISTERS_TO_WIN, HELIUM_TO_BUILD_HARVESTER, HELIUM_TO_MAKE_CANISTER, MAX_HELIUM_STORAGE,
+    },
     tooltip::TooltipString,
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
@@ -66,6 +69,12 @@ pub struct HarvesterButtonText;
 #[derive(Component)]
 pub struct BuildHarvesterButtonSensor;
 
+#[derive(Component)]
+pub struct Ship {
+    start: Vec3,
+    finish: Vec3,
+}
+
 impl Plugin for PanelPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_exit(AppState::Start).with_system(set_up_panel))
@@ -76,8 +85,9 @@ impl Plugin for PanelPlugin {
                     .with_system(move_buggy_on_map)
                     .with_system(handle_harv_blueprint.after(mouse_clicks_panel))
                     .with_system(mouse_clicks_panel)
-                    .with_system(update_tank_level)
-                    .with_system(canister_builder),
+                    .with_system(canister_builder)
+                    .with_system(update_ship)
+                    .with_system(update_tank_level),
             )
             .add_event::<StopBuildingHarvesters>()
             .add_event::<EnterBuildingHarvestersMode>()
@@ -366,6 +376,38 @@ fn set_up_panel(
             ..default()
         },
     ));
+
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(panel_assets.ship.1),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    x: PANEL_OFFSET.x - WIDTH / 2.0 + 40.0,
+                    y: PANEL_OFFSET.y + HEIGHT / 2.0 - 120.0,
+                    z: 3.0,
+                },
+                ..default()
+            },
+            texture: panel_assets.ship.0.clone(),
+            ..default()
+        })
+        .insert(Ship {
+            start: Vec3 {
+                x: PANEL_OFFSET.x - WIDTH / 2.0 + 40.0,
+                y: PANEL_OFFSET.y + HEIGHT / 2.0 - 120.0,
+                z: 3.0,
+            },
+            finish: Vec3 {
+                x: PANEL_OFFSET.x + 80.0,
+                y: PANEL_OFFSET.y + 200.0,
+                z: 3.0,
+            },
+        })
+        .insert(TooltipString("ship".to_string()))
+        .insert(PanelMarker);
 }
 
 fn enable_panel_cam(
@@ -626,14 +668,15 @@ fn canister_builder(
     mut helium: ResMut<StorageHelium>,
     mut stored_canisters: ResMut<StoredCanisters>,
     panel_assets: Res<PanelAssetHandlers>,
-    mut state: ResMut<State<AppState>>
+    mut state: ResMut<State<AppState>>,
 ) {
     for _ in canister_event.iter() {
         if helium.0 < HELIUM_TO_MAKE_CANISTER {
             return;
         }
         helium.0 -= HELIUM_TO_MAKE_CANISTER;
-        let (can_img, size) = &panel_assets.tanks[stored_canisters.0.min(panel_assets.tanks.len() - 1)];
+        let (can_img, size) =
+            &panel_assets.tanks[stored_canisters.0.min(panel_assets.tanks.len() - 1)];
         commands.spawn((
             StoredCanister,
             SpriteBundle {
@@ -655,7 +698,57 @@ fn canister_builder(
         stored_canisters.0 += 1;
         if stored_canisters.0 == CANISTERS_TO_WIN {
             state.set(AppState::Finish).unwrap();
-            return
+            return;
         }
     }
+}
+
+fn update_ship(
+    mut ship: Query<(&mut Transform, &mut TooltipString, &Ship), With<Ship>>,
+    timer: Query<&EndTimer>,
+) {
+    let (mut ship_transform, mut string, ship) = ship.single_mut();
+    let timer = timer.single();
+    ship_transform.translation.x =
+        ship.start.x + ((ship.finish.x - ship.start.x) * timer.timer.percent());
+    ship_transform.translation.y =
+        ship.start.y + ((ship.finish.y - ship.start.y) * timer.timer.percent());
+    string.0 = format!(
+        "{} seconds left before arriving",
+        timer.timer.remaining_secs() as i32
+    );
+}
+
+fn spawn_ship(mut commands: Commands, panel_assets: Res<PanelAssetHandlers>) {
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(panel_assets.ship.1),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    x: PANEL_OFFSET.x - WIDTH / 2.0 + 40.0,
+                    y: PANEL_OFFSET.y + HEIGHT / 2.0 - 120.0,
+                    z: 3.0,
+                },
+                ..default()
+            },
+            texture: panel_assets.ship.0.clone(),
+            ..default()
+        })
+        .insert(Ship {
+            start: Vec3 {
+                x: PANEL_OFFSET.x - WIDTH / 2.0 + 40.0,
+                y: PANEL_OFFSET.y + HEIGHT / 2.0 - 120.0,
+                z: 3.0,
+            },
+            finish: Vec3 {
+                x: PANEL_OFFSET.x + 80.0,
+                y: PANEL_OFFSET.y + 200.0,
+                z: 3.0,
+            },
+        })
+        .insert(TooltipString("ship".to_string()))
+        .insert(PanelMarker);
 }

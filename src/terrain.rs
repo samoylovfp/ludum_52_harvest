@@ -52,7 +52,7 @@ impl Plugin for TerrainPlugin {
         )
         .add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(enable_terrain_cam))
         .add_system(move_harvesters)
-        // .add_system(check_end)
+		.add_system(check_end)
         .add_system(buggy_movement_and_control)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(12.0));
         // .add_plugin(RapierDebugRenderPlugin::default());
