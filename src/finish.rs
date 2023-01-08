@@ -46,8 +46,8 @@ fn spawn_finish(
     mut textures: ResMut<Assets<Image>>,
 	mut fonts: ResMut<Assets<Font>>,
 ) {
-    let mut picture;
-	let mut text;
+    let picture;
+	let text;
     if tanks.0 >= CANISTERS_TO_WIN {
         picture = img_handle_and_size_from_bytes(
             include_bytes!("../assets/spriteendgood.aseprite"),

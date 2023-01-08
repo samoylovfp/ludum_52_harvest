@@ -73,7 +73,7 @@ fn despawn_start(mut commands: Commands, start_entities: Query<Entity, With<Star
     start_entities.for_each(|e| commands.entity(e).despawn());
 }
 
-pub fn set_timer(mut commands: Commands, time: Res<Time>) {
+pub fn set_timer(mut commands: Commands) {
     commands.spawn((
         EndTimer {
             timer: Timer::new(Duration::from_secs(120), TimerMode::Once),

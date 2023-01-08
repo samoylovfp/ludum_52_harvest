@@ -88,6 +88,22 @@ fn setup_terrain(
         .insert(TerrainSprite)
         .insert(TerrainMarker);
     commands.spawn((Camera2dBundle::default(), TerrainMarker));
+
+    // Base collider
+    commands.spawn((
+        Collider::ball(20.0 * PIXEL_MULTIPLIER),
+        RigidBody::Fixed,
+        Transform {
+            translation: Vec3 {
+                x: (420.0 - 220.0) * PIXEL_MULTIPLIER,
+                y: (160.0 - 140.0) * PIXEL_MULTIPLIER,
+                z: 0.0,
+            },
+            ..default()
+        },
+        GlobalTransform::default(),
+    ));
+
     phys.gravity = Vec2 { x: 0.0, y: 0.0 };
 
     let collider_width = 100.0;

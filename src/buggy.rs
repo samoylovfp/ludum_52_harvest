@@ -25,7 +25,7 @@ pub fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
                 translation: Vec3 {
                     z: 0.9,
                     y: 26.0 * PIXEL_MULTIPLIER,
-                    ..default()
+                    x: 150.0 * PIXEL_MULTIPLIER,
                 },
                 ..default()
             },

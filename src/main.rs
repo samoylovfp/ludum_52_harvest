@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use harvester::update_center;
-use tooltip::{spawn_tooltip, update_tooltip};
+use tooltip::update_tooltip;
 use util::load_assets;
 
 mod buggy;
