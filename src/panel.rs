@@ -3,6 +3,7 @@ use std::io::Cursor;
 use bevy::{render::camera::RenderTarget, sprite::collide_aabb::collide};
 
 use crate::{
+    buggy::Buggy,
     harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, TotalHarvesters},
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
@@ -18,6 +19,8 @@ pub const PANEL_OFFSET: Vec3 = Vec3 {
     z: 0.0,
 };
 
+pub const CELL_SIZE_PANEL: f32 = 10.0;
+
 #[derive(Component)]
 pub struct PanelMarker;
 
@@ -27,6 +30,9 @@ pub struct PanelPlugin;
 struct PanelState {
     building_harvester: bool,
 }
+
+#[derive(Component)]
+struct BuggyIcon;
 
 #[derive(Component)]
 struct HarvesterBlueprint;
@@ -42,7 +48,8 @@ impl Plugin for PanelPlugin {
                 SystemSet::on_update(AppState::Panel)
                     .with_system(toggle_building)
                     .with_system(handle_harv_blueprint)
-					.with_system(mouse_clicks_panel),
+                    .with_system(mouse_clicks_panel)
+                    .with_system(move_buggy_on_map),
             )
             .add_event::<StopBuildingHarvesters>();
     }
@@ -125,13 +132,13 @@ fn set_up_panel(
         ));
     }
 
-	commands
+    commands
         .spawn(SpriteBundle {
             sprite: Sprite {
                 custom_size: Some(panel_assets.exit.1),
                 ..default()
             },
-			transform: Transform {
+            transform: Transform {
                 translation: Vec3 {
                     x: PANEL_OFFSET.x,
                     y: PANEL_OFFSET.y,
@@ -144,13 +151,13 @@ fn set_up_panel(
         })
         .insert(PanelMarker);
 
-	commands
+    commands
         .spawn(SpriteBundle {
             sprite: Sprite {
-            	custom_size: Some(Vec2::new(17.0 * PIXEL_MULTIPLIER, 11.0 * PIXEL_MULTIPLIER)),
+                custom_size: Some(Vec2::new(17.0 * PIXEL_MULTIPLIER, 11.0 * PIXEL_MULTIPLIER)),
                 ..default()
             },
-			transform: Transform {
+            transform: Transform {
                 translation: Vec3 {
                     x: PANEL_OFFSET.x - WIDTH / 2.0 + 11.0 * PIXEL_MULTIPLIER,
                     y: PANEL_OFFSET.y + HEIGHT / 2.0 - 8.0 * PIXEL_MULTIPLIER,
@@ -162,6 +169,24 @@ fn set_up_panel(
         })
         .insert(TerrainButton)
         .insert(PanelMarker);
+    commands.spawn((
+        BuggyIcon,
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(panel_assets.buggy_icon.1),
+                ..default()
+            },
+            texture: panel_assets.buggy_icon.0.clone(),
+            transform: Transform {
+                translation: Vec3 {
+                    z: 2.0,
+                    ..PANEL_OFFSET
+                },
+                ..default()
+            },
+            ..default()
+        },
+    ));
 }
 
 fn enable_panel_cam(
@@ -227,23 +252,8 @@ fn handle_harv_blueprint(
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
     let Some(world_cursor_pos) = get_cursor_pos_in_world_coord(wnds.get_primary().unwrap(), camera_transform, camera) else {return};
 
-    let step = 10.0 * PIXEL_MULTIPLIER;
-    let icon_to_panel_sprite_offset = Vec2 { x: 5.5, y: 5.5 } * PIXEL_MULTIPLIER;
-    let icon_to_panel_center_offset = Vec2 { x: -8.0, y: -6.0 };
-
-    let cell_on_panel = ((world_cursor_pos - icon_to_panel_sprite_offset) / step).round() * step
-        + icon_to_panel_sprite_offset;
-
-    let hovered_cell_coord =
-        (cell_on_panel - PANEL_OFFSET.truncate() - icon_to_panel_sprite_offset) / step
-            - icon_to_panel_center_offset;
-
-    let clamped_hovered_cell_coord =
-        hovered_cell_coord.clamp(Vec2 { x: 1.0, y: 1.0 }, Vec2 { x: 9.0, y: 6.0 });
-
-    let world_coord_on_panel = (clamped_hovered_cell_coord + icon_to_panel_center_offset) * step
-        + icon_to_panel_sprite_offset
-        + PANEL_OFFSET.truncate();
+    let (cell_coord, world_coord_on_panel) =
+        panel_coord_to_cell_and_snapped_panel_world_coord(world_cursor_pos);
 
     harv_blueprint.for_each_mut(|mut t| t.translation = world_coord_on_panel.extend(2.0));
     if buttons.just_pressed(MouseButton::Left) && panel_state.building_harvester {
@@ -278,10 +288,7 @@ fn handle_harv_blueprint(
         add_harvester(
             commands,
             terrain_assets,
-            (
-                clamped_hovered_cell_coord.x as i8,
-                clamped_hovered_cell_coord.y as i8,
-            ),
+            cell_coord,
             harvesters.0,
             SlotIcon(slot_entity),
             CenterIcon(center_icon),
@@ -291,12 +298,14 @@ fn handle_harv_blueprint(
     }
 }
 
-fn mouse_clicks_panel(wnds: Res<Windows>,
+fn mouse_clicks_panel(
+    wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     mut buttons: ResMut<Input<MouseButton>>,
     mut app_state: ResMut<State<AppState>>,
-    terrain_button: Query<(&Transform, &Sprite), With<TerrainButton>>,) {
-		let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
+    terrain_button: Query<(&Transform, &Sprite), With<TerrainButton>>,
+) {
+    let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
 
     let wnd = if let RenderTarget::Window(id) = camera.target {
         wnds.get(id).unwrap()
@@ -326,9 +335,50 @@ fn mouse_clicks_panel(wnds: Res<Windows>,
             .is_some()
             {
                 app_state.set(AppState::Terrain).unwrap();
-				buttons.clear();
-				return ;
+                buttons.clear();
+                #[allow(clippy::needless_return)]
+                return;
             }
-		}
-	}
+        }
+    }
+}
+
+fn move_buggy_on_map(
+    buggy: Query<&Transform, With<Buggy>>,
+    mut buggy_icon: Query<&mut Transform, (With<BuggyIcon>, Without<Buggy>)>,
+) {
+    let Ok(pos) = buggy.get_single() else {return};
+    let Ok(mut buggy_icon_pos) = buggy_icon.get_single_mut() else {return};
+
+    // center of the grid - center of the sprite
+    let center_offset = Vec2 {
+        x: (80.0 - 55.0) * PIXEL_MULTIPLIER,
+        y: (79.0 - 60.0) * PIXEL_MULTIPLIER,
+    };
+
+    buggy_icon_pos.translation = pos.translation / CELL_SIZE_TERRAIN * CELL_SIZE_PANEL
+        + PANEL_OFFSET
+        - center_offset.extend(0.0);
+}
+
+fn panel_coord_to_cell_and_snapped_panel_world_coord(world_coord: Vec2) -> ((i8, i8), Vec2) {
+    let step = CELL_SIZE_PANEL * PIXEL_MULTIPLIER;
+    let icon_to_panel_sprite_offset = Vec2 { x: 5.5, y: 5.5 } * PIXEL_MULTIPLIER;
+    let icon_to_panel_center_offset = Vec2 { x: -8.0, y: -6.0 };
+
+    let cell_on_panel = ((world_coord - icon_to_panel_sprite_offset) / step).round() * step
+        + icon_to_panel_sprite_offset;
+
+    let cell_coord = (cell_on_panel - PANEL_OFFSET.truncate() - icon_to_panel_sprite_offset) / step
+        - icon_to_panel_center_offset;
+
+    let clamped_cell_coord = cell_coord.clamp(Vec2 { x: 1.0, y: 1.0 }, Vec2 { x: 9.0, y: 6.0 });
+
+    let world_coord_on_panel = (clamped_cell_coord + icon_to_panel_center_offset) * step
+        + icon_to_panel_sprite_offset
+        + PANEL_OFFSET.truncate();
+    (
+        (clamped_cell_coord.x as i8, clamped_cell_coord.y as i8),
+        world_coord_on_panel,
+    )
 }

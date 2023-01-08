@@ -5,7 +5,7 @@ use crate::{
         MAX_HELIUM,
     },
     tooltip::TooltipString,
-    util::{image_from_aseprite, image_from_aseprite_layer_name_frame, TerrainAssetHandlers},
+    util::{image_from_aseprite, TerrainAssetHandlers},
     AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
