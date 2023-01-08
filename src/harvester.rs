@@ -74,6 +74,10 @@ pub fn add_harvester(
         .insert(Helium(0))
         .insert(SlotNumber(slot))
         .insert(TooltipString("Collecting...".to_string()))
+        .insert((
+            RigidBody::Fixed,
+            Collider::cuboid(12.5 * PIXEL_MULTIPLIER, 12.5 * PIXEL_MULTIPLIER),
+        ))
         .insert(TerrainMarker);
 }
 
