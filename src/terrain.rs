@@ -120,7 +120,7 @@ fn setup_terrain(
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
-				// color: Color::RED,
+                // color: Color::RED,
                 custom_size: Some(Vec2::new(
                     CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER,
                     CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER,
@@ -138,11 +138,11 @@ fn setup_terrain(
             ..default()
         })
         .insert(Base)
-		.insert(TooltipString("Base".to_string()))
+        .insert(TooltipString("Base".to_string()))
         .insert(TerrainMarker);
 
     commands.insert_resource(TotalHarvesters(0));
-    commands.insert_resource(StorageHelium(0));
+    commands.insert_resource(StorageHelium(MAX_HELIUM_STORAGE - 1));
 }
 
 fn enable_terrain_cam(
@@ -153,7 +153,7 @@ fn enable_terrain_cam(
     panel_cam.for_each_mut(|mut c| c.is_active = false);
 }
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
 fn mouse_clicks(
     mut buggy: Query<(&Transform, &mut Helium, &mut TooltipString), (With<Buggy>, Without<Center>)>,
     mut centers: Query<
@@ -171,7 +171,7 @@ fn mouse_clicks(
     mut buttons: ResMut<Input<MouseButton>>,
     mut app_state: ResMut<State<AppState>>,
     map_button: Query<(&Transform, &Sprite), With<MapButton>>,
-	base: Query<&Transform, With<Base>>,
+    base: Query<&Transform, With<Base>>,
 ) {
     let (buggy, mut storage, mut buggy_string) = buggy.single_mut();
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
@@ -250,6 +250,7 @@ fn mouse_clicks(
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn update_button(
     camera: Query<&Transform, (With<TerrainMarker>, With<Camera2d>, Without<MapButton>)>,
     mut button: Query<(&mut Transform, &mut Handle<Image>), With<MapButton>>,

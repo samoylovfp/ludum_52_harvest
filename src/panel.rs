@@ -4,11 +4,11 @@ use bevy::{render::camera::RenderTarget, sprite::collide_aabb::collide};
 
 use crate::{
     buggy::Buggy,
-    harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, TotalHarvesters},
+    harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, TotalHarvesters, StorageHelium},
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
         TerrainAssetHandlers,
-    },
+    }, terrain::MAX_HELIUM_STORAGE,
 };
 
 use super::*;
@@ -418,13 +418,12 @@ fn panel_coord_to_cell_and_snapped_panel_world_coord(world_coord: Vec2) -> ((i8,
 
 fn update_tank_level(
     mut tank: Query<(&mut Sprite, &mut Transform), With<TankLevel>>,
-    mut progress: Local<f32>,
+    helium: Res<StorageHelium>
 ) {
-    *progress = (*progress + 0.01).fract();
-
-    let max_tank_height = 20.0;
-
-    let height = (max_tank_height * *progress).round();
+    
+    let max_tank_height_px = 20.0;
+    let progress = helium.0 as f32 / MAX_HELIUM_STORAGE as f32;
+    let height = (max_tank_height_px * progress).round();
 
     let (mut sprite, mut transform) = tank.single_mut();
 
