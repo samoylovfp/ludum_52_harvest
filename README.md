@@ -8,7 +8,7 @@ Art: [SCHI85](https://github.com/SCHI85)
 
 You can play it [HERE](https://samoylovfp.github.io/ludum_52_harvest/). Instructions are below.
 
-# Pictures, Videos
+![demo](cats.webp)
 
 # Instructions
 ## English
