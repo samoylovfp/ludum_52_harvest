@@ -1,4 +1,4 @@
-use crate::{terrain::{TerrainMarker, TerrainAssetHandlers}, tooltip::TooltipString, util::{image_from_aseprite}};
+use crate::{terrain::{TerrainMarker}, tooltip::TooltipString, util::{image_from_aseprite, TerrainAssetHandlers}};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
 use once_cell::sync::OnceCell;

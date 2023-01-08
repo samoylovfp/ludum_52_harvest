@@ -48,3 +48,38 @@ pub fn get_cursor_pos_in_world_coord(
     let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
     Some(world_pos.truncate())
 }
+
+#[derive(Resource)]
+pub struct TerrainAssetHandlers {
+    // 0 - red, 1 - yellow, 2 - green
+    pub center_terrain_lamps: [(Handle<Image>, Vec2); 3],
+}
+
+#[derive(Resource)]
+pub struct PanelAssetHandlers {
+    // 0 - red, 1 - yellow, 2 - green
+    pub center_icon: [(Handle<Image>, Vec2); 3],
+}
+
+pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
+    let center_terrain_lamps_bytes = include_bytes!("../assets/spritecenter1.aseprite");
+
+    commands.insert_resource(TerrainAssetHandlers {
+        center_terrain_lamps: ["red", "yellow", "green"].map(|layer_name| {
+            let img =
+                image_from_aseprite_layer_name_frame(center_terrain_lamps_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+    });
+
+    let center_icon_bytes = include_bytes!("../assets/iconcenter3.aseprite");
+
+    commands.insert_resource(PanelAssetHandlers {
+        center_icon: ["red", "yellow", "green"].map(|layer_name| {
+            let img = image_from_aseprite_layer_name_frame(center_icon_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+    });
+}

@@ -4,7 +4,7 @@ use crate::{
     harvester::{add_harvester, TotalHarvesters},
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord,
-        image_from_aseprite_layer_name_frame,
+        image_from_aseprite_layer_name_frame, PanelAssetHandlers, TerrainAssetHandlers,
     },
 };
 
@@ -20,12 +20,6 @@ pub const PANEL_OFFSET: Vec3 = Vec3 {
 pub struct PanelMarker;
 
 pub struct PanelPlugin;
-
-#[derive(Resource)]
-struct PanelAssetHandlers {
-    // 0 - red, 1 - yellow, 2 - green
-    center_icon: [(Handle<Image>, Vec2); 3],
-}
 
 #[derive(Resource)]
 struct PanelState {
@@ -97,16 +91,6 @@ fn set_up_panel(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
     commands.insert_resource(PanelState {
         building_harvester: false,
     });
-
-    let center_icon_bytes = include_bytes!("../assets/iconcenter3.aseprite");
-
-    commands.insert_resource(PanelAssetHandlers {
-        center_icon: ["red", "yellow", "green"].map(|layer_name| {
-            let img = image_from_aseprite_layer_name_frame(center_icon_bytes, layer_name, 0);
-            let size = img.size();
-            (textures.add(img), size * PIXEL_MULTIPLIER)
-        }),
-    });
 }
 
 fn enable_panel_cam(
@@ -163,6 +147,7 @@ fn handle_harv_blueprint(
     textures: ResMut<Assets<Image>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     buttons: Res<Input<MouseButton>>,
+    terrain_assets: Res<TerrainAssetHandlers>,
     mut stopper: EventWriter<StopBuildingHarvesters>,
     mut harvesters: ResMut<TotalHarvesters>,
 ) {
@@ -194,6 +179,7 @@ fn handle_harv_blueprint(
         add_harvester(
             commands,
             textures,
+            terrain_assets,
             (
                 clamped_hovered_cell_coord.x as i8,
                 clamped_hovered_cell_coord.y as i8,
