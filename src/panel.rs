@@ -47,9 +47,9 @@ impl Plugin for PanelPlugin {
             .add_system_set(
                 SystemSet::on_update(AppState::Panel)
                     .with_system(toggle_building)
-                    .with_system(handle_harv_blueprint)
-                    .with_system(mouse_clicks_panel)
-                    .with_system(move_buggy_on_map),
+                    .with_system(move_buggy_on_map)
+                    .with_system(handle_harv_blueprint.after(mouse_clicks_panel))
+					.with_system(mouse_clicks_panel),
             )
             .add_event::<StopBuildingHarvesters>();
     }
