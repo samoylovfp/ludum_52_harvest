@@ -3,11 +3,10 @@ use std::f32::consts::FRAC_PI_2;
 use crate::{
     terrain::{TerrainMarker, TERRAIN_SIZE},
     tooltip::TooltipString,
-    util::{image_from_aseprite, TerrainAssetHandlers},
+    util::TerrainAssetHandlers,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
-use once_cell::sync::OnceCell;
 use rand::{thread_rng, Rng};
 
 use super::*;
@@ -17,14 +16,15 @@ pub const MAX_HELIUM: usize = 10;
 
 pub fn add_harvester(
     mut commands: Commands,
-    mut textures: ResMut<Assets<Image>>,
     terrain_assets: Res<TerrainAssetHandlers>,
     cell: (i8, i8),
     slot: usize,
 ) {
     let center_coords = (
-        cell.0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
-        cell.1 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.1 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+        cell.0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0
+            + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+        cell.1 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.1 / 2.0
+            + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
     );
 
     let mut rng = thread_rng();
@@ -114,8 +114,10 @@ pub fn move_harvesters(
             continue;
         }
         let current_cell = (
-			cell.0.0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
-			cell.0.1 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.1 / 2.0 + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+            cell.0 .0 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.0 / 2.0
+                + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
+            cell.0 .1 as f32 * CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER - TERRAIN_SIZE.1 / 2.0
+                + CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
         );
         match *direction {
             Direction::Up => transform.translation.y += 1.0,

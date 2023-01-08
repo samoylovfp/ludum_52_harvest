@@ -42,7 +42,7 @@ pub fn get_cursor_pos_in_world_coord(
 ) -> Option<Vec2> {
     let screen_pos = wnd.cursor_position()?;
 
-    let window_size = Vec2::new(wnd.width() as f32, wnd.height() as f32);
+    let window_size = Vec2::new(wnd.width(), wnd.height());
     let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
     let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
     let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));

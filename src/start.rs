@@ -1,6 +1,6 @@
-use bevy::text::FontLoader;
+use bevy::prelude::*;
 
-use super::*;
+use crate::AppState;
 
 #[derive(Component)]
 pub struct StartMarker;

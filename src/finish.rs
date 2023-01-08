@@ -6,7 +6,7 @@ pub struct FinishMarker;
 pub struct Finish;
 
 impl Plugin for Finish {
-    fn build(&self, app: &mut App) {
+    fn build(&self, _app: &mut App) {
         // app
         //     .add_system_set(
         //         SystemSet::on_enter(AppState::Finish)

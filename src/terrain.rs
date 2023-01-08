@@ -4,8 +4,8 @@ use crate::{
         move_harvesters, BreakTime, Center, HarvesterState, Helium, TotalHarvesters, MAX_HELIUM,
     },
     tooltip::TooltipString,
-    util::{image_from_aseprite, image_from_aseprite_layer_name_frame},
-    AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
+    util::image_from_aseprite,
+    AppState, PIXEL_MULTIPLIER,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -49,10 +49,7 @@ fn setup_terrain(
     static TERRAIN_TEXTURE_HANDLE_CELL: OnceCell<Handle<Image>> = OnceCell::new();
 
     let terrain_image = TERRAIN_IMAGE_CELL.get_or_init(|| {
-        image_from_aseprite(
-            include_bytes!("../assets/spritemap5.aseprite"),
-            "Layer 1",
-        )
+        image_from_aseprite(include_bytes!("../assets/spritemap5.aseprite"), "Layer 1")
     });
     let terrain_texture_handle =
         TERRAIN_TEXTURE_HANDLE_CELL.get_or_init(|| textures.add(terrain_image.clone()));
@@ -132,7 +129,7 @@ fn mouse_clicks(
 
     if buttons.just_pressed(MouseButton::Left) {
         if let Some(screen_pos) = wnd.cursor_position() {
-            let window_size = Vec2::new(wnd.width() as f32, wnd.height() as f32);
+            let window_size = Vec2::new(wnd.width(), wnd.height());
             let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
             let ndc_to_world =
                 camera_transform.compute_matrix() * camera.projection_matrix().inverse();

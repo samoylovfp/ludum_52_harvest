@@ -4,7 +4,7 @@ use crate::{
     harvester::{add_harvester, TotalHarvesters},
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord,
-        image_from_aseprite_layer_name_frame, PanelAssetHandlers, TerrainAssetHandlers,
+        PanelAssetHandlers, TerrainAssetHandlers,
     },
 };
 
@@ -42,7 +42,11 @@ impl Plugin for PanelPlugin {
     }
 }
 
-fn set_up_panel(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
+fn set_up_panel(
+    mut commands: Commands,
+    mut textures: ResMut<Assets<Image>>,
+    panel_assets: Res<PanelAssetHandlers>,
+) {
     let ase_file = asefile::AsepriteFile::read(Cursor::new(include_bytes!(
         "../assets/spritepanel8.aseprite"
     )))
@@ -91,6 +95,25 @@ fn set_up_panel(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
     commands.insert_resource(PanelState {
         building_harvester: false,
     });
+
+    for slot in &panel_assets.harv_slots {
+        let empty = &slot[0];
+        commands.spawn(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(empty.1),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    z: 1.0,
+                    ..PANEL_OFFSET
+                },
+                ..default()
+            },
+            texture: empty.0.clone(),
+            ..default()
+        });
+    }
 }
 
 fn enable_panel_cam(
@@ -144,7 +167,6 @@ fn handle_harv_blueprint(
     commands: Commands,
     mut harv_blueprint: Query<&mut Transform, With<HarvesterBlueprint>>,
     wnds: Res<Windows>,
-    textures: ResMut<Assets<Image>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     buttons: Res<Input<MouseButton>>,
     terrain_assets: Res<TerrainAssetHandlers>,
@@ -178,7 +200,6 @@ fn handle_harv_blueprint(
         // TODO if placement valid
         add_harvester(
             commands,
-            textures,
             terrain_assets,
             (
                 clamped_hovered_cell_coord.x as i8,

@@ -23,7 +23,7 @@ pub fn spawn_tooltip(mut commands: Commands, mut fonts: ResMut<Assets<Font>>) {
 
     commands.spawn((
         Text2dBundle {
-            text: Text::from_section("translation", text_style.clone())
+            text: Text::from_section("translation", text_style)
                 .with_alignment(text_alignment),
             ..default()
         },
@@ -31,6 +31,7 @@ pub fn spawn_tooltip(mut commands: Commands, mut fonts: ResMut<Assets<Font>>) {
     ));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn update_tooltip(
     mut tooltip: Query<(&mut Transform, &mut Text), (With<Tooltip>, Without<TooltipString>)>,
     wnds: Res<Windows>,
