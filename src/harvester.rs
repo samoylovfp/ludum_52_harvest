@@ -238,7 +238,10 @@ pub fn update_center(
             HarvesterState::Full => 2,
             HarvesterState::Broken => 3,
         };
-        *slot_img = panel_assets.harv_slots[slot.0][new_slot_img_idx].0.clone();
+        *slot_img = panel_assets.harv_slots[slot.0.min(panel_assets.harv_slots.len() - 1)]
+            [new_slot_img_idx]
+            .0
+            .clone();
 
         let new_center_img_idx = match *state {
             HarvesterState::Work => 0,
