@@ -1,6 +1,6 @@
 use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
-    harvester::{add_harvester, move_harvesters, Center, HarvesterState, Helium, MAX_HELIUM},
+    harvester::{add_harvester, move_harvesters, Center, HarvesterState, Helium, MAX_HELIUM, BreakTime},
     tooltip::TooltipString,
     util::image_from_aseprite,
     AppState, PIXEL_MULTIPLIER,
@@ -8,6 +8,7 @@ use crate::{
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
 use once_cell::sync::OnceCell;
+use rand::{thread_rng, Rng};
 
 pub const COLLECT_DISTANCE: f32 = 500.0;
 
@@ -23,7 +24,7 @@ impl Plugin for TerrainPlugin {
                 .with_system(setup_terrain)
                 .with_system(setup_buggy),
         )
-        .add_system_set(SystemSet::on_update(AppState::Terrain).with_system(move_helium))
+        .add_system_set(SystemSet::on_update(AppState::Terrain).with_system(mouse_clicks))
         .add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(enable_terrain_cam))
         .add_system(move_harvesters)
         .add_system(buggy_movement_and_control)
@@ -76,10 +77,10 @@ fn enable_terrain_cam(
     panel_cam.for_each_mut(|mut c| c.is_active = false);
 }
 
-fn move_helium(
+fn mouse_clicks(
     mut buggy: Query<(&Transform, &mut Helium, &mut TooltipString), (With<Buggy>, Without<Center>)>,
     mut centers: Query<
-        (&Transform, &Sprite, &mut Helium, &mut HarvesterState),
+        (&Transform, &Sprite, &mut Helium, &mut HarvesterState, &mut BreakTime),
         (With<Center>, Without<Buggy>),
     >,
     wnds: Res<Windows>,
@@ -103,7 +104,7 @@ fn move_helium(
                 camera_transform.compute_matrix() * camera.projection_matrix().inverse();
             let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
 
-            for (center, sprite, mut helium, mut state) in centers.iter_mut() {
+            for (center, sprite, mut helium, mut state, mut breaktime) in centers.iter_mut() {
                 if collide(
                     center.translation,
                     Vec2 {
@@ -127,6 +128,8 @@ fn move_helium(
                             *state = HarvesterState::Work;
                         }
                         HarvesterState::Broken => {
+							let mut rng = thread_rng();
+							breaktime.0 = rng.gen_range(100..1000);
                             if helium.0 == MAX_HELIUM {
                                 *state = HarvesterState::Full;
                             } else {

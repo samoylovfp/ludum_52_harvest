@@ -2,6 +2,7 @@ use crate::{terrain::TerrainMarker, tooltip::TooltipString, util::image_from_ase
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
 use once_cell::sync::OnceCell;
+use rand::{thread_rng, Rng};
 
 use super::*;
 
@@ -28,6 +29,9 @@ pub fn add_harvester(
         cell.0 as f32 * PIXEL_MULTIPLIER,
         cell.1 as f32 * PIXEL_MULTIPLIER,
     );
+
+	let mut rng = thread_rng();
+
     let harvester_id = commands
         .spawn(SpriteBundle {
             sprite: Sprite {
@@ -72,6 +76,7 @@ pub fn add_harvester(
             ..default()
         })
         .insert(Center)
+		.insert(BreakTime(rng.gen_range(100..1000)))
         .insert(HarvesterId(harvester_id))
         .insert(HarvesterState::Work)
         .insert(HarvestTime(0))
@@ -138,15 +143,19 @@ pub fn update_center(
             &mut HarvestTime,
             &mut Helium,
             &mut TooltipString,
+			&mut BreakTime
         ),
         (With<Center>, Without<Harvester>),
     >,
     mut harvesters: Query<(&mut Moves, &mut TooltipString), (With<Harvester>, Without<Center>)>,
 ) {
-	for (harvester_id, slot, mut state, mut time, mut helium, mut string) in centers.iter_mut() {
+	for (harvester_id, slot, mut state, mut time, mut helium, mut string, mut breaktime) in centers.iter_mut() {
 		let (mut harvester, mut harv_string) = harvesters.get_mut(harvester_id.0).unwrap();
 		if helium.0 == MAX_HELIUM {
 			*state = HarvesterState::Full;
+		}
+		if breaktime.0 <= 0 {
+			*state = HarvesterState::Broken;
 		}
 		match *state {
 			HarvesterState::Work => {
@@ -155,6 +164,7 @@ pub fn update_center(
 					helium.0 += 1;
 					time.0 = 0;
 				}
+				breaktime.0 -= 1;
 				string.0 = format!("Harvester {}\nStatus: Working\nHelium amount: {}/{}", slot.0, helium.0, MAX_HELIUM);
 				harvester.0 = true;
 				harv_string.0 = "Collecting...".to_string();
@@ -201,6 +211,9 @@ pub struct HarvesterId(Entity);
 
 #[derive(Component)]
 pub struct Helium(pub usize);
+
+#[derive(Component)]
+pub struct BreakTime(pub i32);
 
 #[derive(Component)]
 pub struct HarvestTime(usize);
