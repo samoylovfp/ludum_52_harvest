@@ -134,6 +134,7 @@ pub fn move_harvesters(
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn update_center(
     mut centers: Query<
         (

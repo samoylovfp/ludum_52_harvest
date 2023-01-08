@@ -5,7 +5,7 @@ use crate::{
     },
     tooltip::TooltipString,
     util::image_from_aseprite,
-    AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
+    AppState, PIXEL_MULTIPLIER,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -103,6 +103,7 @@ fn enable_terrain_cam(
     panel_cam.for_each_mut(|mut c| c.is_active = false);
 }
 
+#[allow(clippy::type_complexity)]
 fn mouse_clicks(
     mut buggy: Query<(&Transform, &mut Helium, &mut TooltipString), (With<Buggy>, Without<Center>)>,
     mut centers: Query<
