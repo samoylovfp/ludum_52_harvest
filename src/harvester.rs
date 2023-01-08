@@ -73,7 +73,7 @@ pub fn add_harvester(
 			},
 			texture: terrain_assets.center_terrain_lamps[2].0.clone(),
 			transform: Transform {
-				translation: Vec3::new(center_coords.0, center_coords.1, 1.0),
+				translation: Vec3::new(center_coords.0, center_coords.1, 1.5),
 				..Default::default()
 			},
 			..default()
@@ -194,17 +194,19 @@ pub fn update_center(
 				string.0 = format!("Harvester {}\nStatus: Working\nHelium amount: {}/{}", slot.0, helium.0, MAX_HELIUM);
 				harvester.0 = true;
 				harv_string.0 = "Collecting...".to_string();
-				// *lamp = 
+				*lamp = terrain_assets.center_terrain_lamps[2].0.clone();
 			},
 			HarvesterState::Full => {
 				string.0 = format!("Harvester {}\nStatus: Full\nClick to collect helium", slot.0);
 				harvester.0 = false;
 				harv_string.0 = "Waiting...".to_string();
+				*lamp = terrain_assets.center_terrain_lamps[1].0.clone();
 			},
 			HarvesterState::Broken => {
 				string.0 = format!("Harvester {}\nStatus: Broken\nClick to repair", slot.0);
 				harvester.0 = false;
 				harv_string.0 = "Waiting...".to_string();
+				*lamp = terrain_assets.center_terrain_lamps[0].0.clone();
 			},
 		}
 	}
