@@ -37,7 +37,7 @@ pub fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
         Velocity::default(),
         ExternalForce::default(),
 		Helium(0),
-		TooltipString("".to_string()),
+		TooltipString("Helium amount: 0".to_string()),
         TerrainMarker,
     ));
 }
