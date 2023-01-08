@@ -1,4 +1,10 @@
-use crate::{terrain::TerrainMarker, util::image_from_aseprite, AppState, PIXEL_MULTIPLIER, harvester::Helium, tooltip::TooltipString};
+use crate::{
+    harvester::Helium,
+    terrain::{TerrainMarker, TerrainSprite},
+    tooltip::TooltipString,
+    util::image_from_aseprite,
+    AppState, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -36,8 +42,8 @@ pub fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
         ColliderMassProperties::Density(2.0),
         Velocity::default(),
         ExternalForce::default(),
-		Helium(0),
-		TooltipString("Helium amount: 0".to_string()),
+        Helium(0),
+        TooltipString("Helium amount: 0".to_string()),
         TerrainMarker,
     ));
 }
@@ -48,6 +54,7 @@ pub fn buggy_movement_and_control(
     mut camera: Query<&mut Transform, (With<TerrainMarker>, With<Camera2d>)>,
     keys: Res<Input<KeyCode>>,
     state: Res<State<AppState>>,
+    terrain: Query<&Sprite, With<TerrainSprite>>,
 ) {
     let mut position = None;
 
@@ -101,8 +108,25 @@ pub fn buggy_movement_and_control(
         force.force += lateral_friction;
         position = Some(pos.translation);
     }
+
     if let Some(pos) = position {
-        camera.get_single_mut().unwrap().translation = pos;
+        let terrain = terrain.single().custom_size.unwrap();
+        camera.get_single_mut().unwrap().translation.x = if pos.x < -(terrain.x / 2.0 - WIDTH / 2.0)
+        {
+            -(terrain.x / 2.0 - WIDTH / 2.0)
+        } else if pos.x > (terrain.x / 2.0 - WIDTH / 2.0) {
+            terrain.x / 2.0 - WIDTH / 2.0
+        } else {
+            pos.x
+        };
+        camera.get_single_mut().unwrap().translation.y =
+            if pos.y < -(terrain.y / 2.0 - HEIGHT / 2.0) {
+                -(terrain.y / 2.0 - HEIGHT / 2.0)
+            } else if pos.y > (terrain.y / 2.0 - HEIGHT / 2.0) {
+                terrain.y / 2.0 - HEIGHT / 2.0
+            } else {
+                pos.y
+            };
         camera.get_single_mut().unwrap().translation.z = 100.0;
     }
 }
