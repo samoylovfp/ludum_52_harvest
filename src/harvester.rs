@@ -1,4 +1,10 @@
-use crate::{terrain::{TerrainMarker}, tooltip::TooltipString, util::{image_from_aseprite, TerrainAssetHandlers}};
+use std::f32::consts::FRAC_PI_2;
+
+use crate::{
+    terrain::TerrainMarker,
+    tooltip::TooltipString,
+    util::{image_from_aseprite, TerrainAssetHandlers},
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
 use once_cell::sync::OnceCell;
@@ -12,22 +18,10 @@ pub const MAX_HELIUM: usize = 10;
 pub fn add_harvester(
     mut commands: Commands,
     mut textures: ResMut<Assets<Image>>,
-	terrain_assets: Res<TerrainAssetHandlers>,
+    terrain_assets: Res<TerrainAssetHandlers>,
     cell: (i8, i8),
     slot: usize,
 ) {
-    static HARV_IMAGE_CELL: OnceCell<Image> = OnceCell::new();
-    static HARV_TEXTURE_HANDLE_CELL: OnceCell<Handle<Image>> = OnceCell::new();
-
-    let harv_image = HARV_IMAGE_CELL.get_or_init(|| {
-        image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite"), "base")
-    });
-    let harv_texture_handle =
-        HARV_TEXTURE_HANDLE_CELL.get_or_init(|| textures.add(harv_image.clone()));
-    let size = harv_image.size() * PIXEL_MULTIPLIER;
-
-	
-
     let center_coords = (
         cell.0 as f32 * PIXEL_MULTIPLIER,
         cell.1 as f32 * PIXEL_MULTIPLIER,
@@ -38,7 +32,7 @@ pub fn add_harvester(
     let harvester_id = commands
         .spawn(SpriteBundle {
             sprite: Sprite {
-                custom_size: Some(size),
+                custom_size: Some(terrain_assets.harvester.1),
                 ..default()
             },
             transform: Transform {
@@ -47,9 +41,10 @@ pub fn add_harvester(
                     center_coords.1 + (CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER),
                     1.0,
                 ),
+                rotation: Quat::from_rotation_z(-FRAC_PI_2),
                 ..Default::default()
             },
-            texture: harv_texture_handle.clone(),
+            texture: terrain_assets.harvester.0.clone(),
 
             ..default()
         })
@@ -65,30 +60,30 @@ pub fn add_harvester(
         .insert(TooltipString("Working...".to_string()))
         .id();
 
-	let lamp_id = commands
-		.spawn(SpriteBundle {
-			sprite: Sprite {
-				custom_size: Some(size),
-				..default()
-			},
-			texture: terrain_assets.center_terrain_lamps[2].0.clone(),
-			transform: Transform {
-				translation: Vec3::new(center_coords.0, center_coords.1, 1.5),
-				..Default::default()
-			},
-			..default()
-		})
-		.insert(Lamp)
-		.insert(TerrainMarker)
-		.id();
+    let lamp_id = commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(terrain_assets.center.1),
+                ..default()
+            },
+            texture: terrain_assets.center_terrain_lamps[2].0.clone(),
+            transform: Transform {
+                translation: Vec3::new(center_coords.0, center_coords.1, 1.5),
+                ..Default::default()
+            },
+            ..default()
+        })
+        .insert(Lamp)
+        .insert(TerrainMarker)
+        .id();
 
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
-                custom_size: Some(size),
+                custom_size: Some(terrain_assets.center.1),
                 ..default()
             },
-            texture: harv_texture_handle.clone(),
+            texture: terrain_assets.center.0.clone(),
             transform: Transform {
                 translation: Vec3::new(center_coords.0, center_coords.1, 1.0),
                 ..Default::default()
@@ -98,7 +93,7 @@ pub fn add_harvester(
         .insert(Center)
         .insert(BreakTime(rng.gen_range(100..1000)))
         .insert(HarvesterId(harvester_id))
-		.insert(LampId(lamp_id))
+        .insert(LampId(lamp_id))
         .insert(HarvesterState::Work)
         .insert(HarvestTime(0))
         .insert(Helium(0))
@@ -160,8 +155,8 @@ pub fn update_center(
     mut centers: Query<
         (
             &HarvesterId,
-			&LampId,
-			&SlotNumber,
+            &LampId,
+            &SlotNumber,
             &mut HarvesterState,
             &mut HarvestTime,
             &mut Helium,
@@ -171,45 +166,53 @@ pub fn update_center(
         (With<Center>, Without<Harvester>),
     >,
     mut harvesters: Query<(&mut Moves, &mut TooltipString), (With<Harvester>, Without<Center>)>,
-	terrain_assets: Res<TerrainAssetHandlers>,
-	mut lamps: Query<&mut Handle<Image>, With<Lamp>>,
+    terrain_assets: Res<TerrainAssetHandlers>,
+    mut lamps: Query<&mut Handle<Image>, With<Lamp>>,
 ) {
-	for (harvester_id, lamp_id, slot, mut state, mut time, mut helium, mut string, mut breaktime) in centers.iter_mut() {
-		let (mut harvester, mut harv_string) = harvesters.get_mut(harvester_id.0).unwrap();
-		let mut lamp = lamps.get_mut(lamp_id.0).unwrap();
-		if helium.0 == MAX_HELIUM {
-			*state = HarvesterState::Full;
-		}
-		if breaktime.0 <= 0 {
-			*state = HarvesterState::Broken;
-		}
-		match *state {
-			HarvesterState::Work => {
-				time.0 += 1;
-				if time.0 >= HARVEST_SPEED {
-					helium.0 += 1;
-					time.0 = 0;
-				}
-				breaktime.0 -= 1;
-				string.0 = format!("Harvester {}\nStatus: Working\nHelium amount: {}/{}", slot.0, helium.0, MAX_HELIUM);
-				harvester.0 = true;
-				harv_string.0 = "Collecting...".to_string();
-				*lamp = terrain_assets.center_terrain_lamps[2].0.clone();
-			},
-			HarvesterState::Full => {
-				string.0 = format!("Harvester {}\nStatus: Full\nClick to collect helium", slot.0);
-				harvester.0 = false;
-				harv_string.0 = "Waiting...".to_string();
-				*lamp = terrain_assets.center_terrain_lamps[1].0.clone();
-			},
-			HarvesterState::Broken => {
-				string.0 = format!("Harvester {}\nStatus: Broken\nClick to repair", slot.0);
-				harvester.0 = false;
-				harv_string.0 = "Waiting...".to_string();
-				*lamp = terrain_assets.center_terrain_lamps[0].0.clone();
-			},
-		}
-	}
+    for (harvester_id, lamp_id, slot, mut state, mut time, mut helium, mut string, mut breaktime) in
+        centers.iter_mut()
+    {
+        let (mut harvester, mut harv_string) = harvesters.get_mut(harvester_id.0).unwrap();
+        let mut lamp = lamps.get_mut(lamp_id.0).unwrap();
+        if helium.0 == MAX_HELIUM {
+            *state = HarvesterState::Full;
+        }
+        if breaktime.0 <= 0 {
+            *state = HarvesterState::Broken;
+        }
+        match *state {
+            HarvesterState::Work => {
+                time.0 += 1;
+                if time.0 >= HARVEST_SPEED {
+                    helium.0 += 1;
+                    time.0 = 0;
+                }
+                breaktime.0 -= 1;
+                string.0 = format!(
+                    "Harvester {}\nStatus: Working\nHelium amount: {}/{}",
+                    slot.0, helium.0, MAX_HELIUM
+                );
+                harvester.0 = true;
+                harv_string.0 = "Collecting...".to_string();
+                *lamp = terrain_assets.center_terrain_lamps[2].0.clone();
+            }
+            HarvesterState::Full => {
+                string.0 = format!(
+                    "Harvester {}\nStatus: Full\nClick to collect helium",
+                    slot.0
+                );
+                harvester.0 = false;
+                harv_string.0 = "Waiting...".to_string();
+                *lamp = terrain_assets.center_terrain_lamps[1].0.clone();
+            }
+            HarvesterState::Broken => {
+                string.0 = format!("Harvester {}\nStatus: Broken\nClick to repair", slot.0);
+                harvester.0 = false;
+                harv_string.0 = "Waiting...".to_string();
+                *lamp = terrain_assets.center_terrain_lamps[0].0.clone();
+            }
+        }
+    }
 }
 
 #[derive(Component)]

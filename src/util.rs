@@ -49,10 +49,14 @@ pub fn get_cursor_pos_in_world_coord(
     Some(world_pos.truncate())
 }
 
+pub type ImgHWithSize = (Handle<Image>, Vec2);
+
 #[derive(Resource)]
 pub struct TerrainAssetHandlers {
     // 0 - red, 1 - yellow, 2 - green
-    pub center_terrain_lamps: [(Handle<Image>, Vec2); 3],
+    pub center_terrain_lamps: [ImgHWithSize; 3],
+    pub harvester: ImgHWithSize,
+    pub center: ImgHWithSize,
 }
 
 #[derive(Resource)]
@@ -61,16 +65,33 @@ pub struct PanelAssetHandlers {
     pub center_icon: [(Handle<Image>, Vec2); 3],
 }
 
+fn img_handle_and_size_from_bytes(
+    b: &[u8],
+    layer_name: &str,
+    textures: &mut ResMut<Assets<Image>>,
+) -> ImgHWithSize {
+    let img = image_from_aseprite_layer_name_frame(b, layer_name, 0);
+    let size = img.size();
+    (textures.add(img), size * PIXEL_MULTIPLIER)
+}
+
 pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
     let center_terrain_lamps_bytes = include_bytes!("../assets/spritecenter1.aseprite");
 
     commands.insert_resource(TerrainAssetHandlers {
         center_terrain_lamps: ["red", "yellow", "green"].map(|layer_name| {
-            let img =
-                image_from_aseprite_layer_name_frame(center_terrain_lamps_bytes, layer_name, 0);
-            let size = img.size();
-            (textures.add(img), size * PIXEL_MULTIPLIER)
+            img_handle_and_size_from_bytes(center_terrain_lamps_bytes, layer_name, &mut textures)
         }),
+        harvester: img_handle_and_size_from_bytes(
+            include_bytes!("../assets/spriteharvester1.aseprite"),
+            "Layer 1",
+            &mut textures,
+        ),
+        center: img_handle_and_size_from_bytes(
+            include_bytes!("../assets/spritecenter1.aseprite"),
+            "base",
+            &mut textures,
+        ),
     });
 
     let center_icon_bytes = include_bytes!("../assets/iconcenter3.aseprite");
