@@ -47,29 +47,27 @@ pub fn update_tooltip(
         wnds.get_primary().unwrap()
     };
 
-	text.sections[0].value = "".to_string();
+    text.sections[0].value = "".to_string();
 
     if let Some(world_pos) = get_cursor_pos_in_world_coord(wnd, camera_transform, camera) {
+        tooltip.translation.x = world_pos.x + 10.0;
+        tooltip.translation.y = world_pos.y - 10.0;
+        tooltip.translation.z = 2.0;
 
-    tooltip.translation.x = world_pos.x + 10.0;
-    tooltip.translation.y = world_pos.y - 10.0;
-    tooltip.translation.z = 2.0;
-
-    for (object, sprite, string) in objects.iter() {
-        if collide(
-            object.translation,
-            Vec2 {
-                x: sprite.custom_size.unwrap().x,
-                y: sprite.custom_size.unwrap().y,
-            },
-            world_pos.extend(0.0),
-            Vec2 { x: 1.0, y: 1.0 },
-        )
-        .is_some()
-        {
-            text.sections[0].value = string.0.clone();
+        for (object, sprite, string) in objects.iter() {
+            if collide(
+                object.translation,
+                Vec2 {
+                    x: sprite.custom_size.unwrap().x,
+                    y: sprite.custom_size.unwrap().y,
+                },
+                world_pos.extend(0.0),
+                Vec2 { x: 1.0, y: 1.0 },
+            )
+            .is_some()
+            {
+                text.sections[0].value = string.0.clone();
+            }
         }
     }
-    }
-    
 }

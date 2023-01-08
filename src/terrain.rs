@@ -66,7 +66,7 @@ fn setup_terrain(
             texture: terrain_texture_handle.clone(),
             ..default()
         })
-		.insert(TerrainSprite)
+        .insert(TerrainSprite)
         .insert(TerrainMarker);
     commands.spawn((Camera2dBundle::default(), TerrainMarker));
     phys.gravity = Vec2 { x: 0.0, y: 0.0 };

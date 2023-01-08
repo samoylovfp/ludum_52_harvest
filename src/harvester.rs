@@ -30,7 +30,7 @@ pub fn add_harvester(
         cell.1 as f32 * PIXEL_MULTIPLIER,
     );
 
-	let mut rng = thread_rng();
+    let mut rng = thread_rng();
 
     let harvester_id = commands
         .spawn(SpriteBundle {
@@ -76,7 +76,7 @@ pub fn add_harvester(
             ..default()
         })
         .insert(Center)
-		.insert(BreakTime(rng.gen_range(100..1000)))
+        .insert(BreakTime(rng.gen_range(100..1000)))
         .insert(HarvesterId(harvester_id))
         .insert(HarvesterState::Work)
         .insert(HarvestTime(0))
@@ -138,49 +138,57 @@ pub fn update_center(
     mut centers: Query<
         (
             &HarvesterId,
-			&SlotNumber,
+            &SlotNumber,
             &mut HarvesterState,
             &mut HarvestTime,
             &mut Helium,
             &mut TooltipString,
-			&mut BreakTime
+            &mut BreakTime,
         ),
         (With<Center>, Without<Harvester>),
     >,
     mut harvesters: Query<(&mut Moves, &mut TooltipString), (With<Harvester>, Without<Center>)>,
 ) {
-	for (harvester_id, slot, mut state, mut time, mut helium, mut string, mut breaktime) in centers.iter_mut() {
-		let (mut harvester, mut harv_string) = harvesters.get_mut(harvester_id.0).unwrap();
-		if helium.0 == MAX_HELIUM {
-			*state = HarvesterState::Full;
-		}
-		if breaktime.0 <= 0 {
-			*state = HarvesterState::Broken;
-		}
-		match *state {
-			HarvesterState::Work => {
-				time.0 += 1;
-				if time.0 >= HARVEST_SPEED {
-					helium.0 += 1;
-					time.0 = 0;
-				}
-				breaktime.0 -= 1;
-				string.0 = format!("Harvester {}\nStatus: Working\nHelium amount: {}/{}", slot.0, helium.0, MAX_HELIUM);
-				harvester.0 = true;
-				harv_string.0 = "Collecting...".to_string();
-			},
-			HarvesterState::Full => {
-				string.0 = format!("Harvester {}\nStatus: Full\nClick to collect helium", slot.0);
-				harvester.0 = false;
-				harv_string.0 = "Waiting...".to_string();
-			},
-			HarvesterState::Broken => {
-				string.0 = format!("Harvester {}\nStatus: Broken\nClick to repair", slot.0);
-				harvester.0 = false;
-				harv_string.0 = "Waiting...".to_string();
-			},
-		}
-	}
+    for (harvester_id, slot, mut state, mut time, mut helium, mut string, mut breaktime) in
+        centers.iter_mut()
+    {
+        let (mut harvester, mut harv_string) = harvesters.get_mut(harvester_id.0).unwrap();
+        if helium.0 == MAX_HELIUM {
+            *state = HarvesterState::Full;
+        }
+        if breaktime.0 <= 0 {
+            *state = HarvesterState::Broken;
+        }
+        match *state {
+            HarvesterState::Work => {
+                time.0 += 1;
+                if time.0 >= HARVEST_SPEED {
+                    helium.0 += 1;
+                    time.0 = 0;
+                }
+                breaktime.0 -= 1;
+                string.0 = format!(
+                    "Harvester {}\nStatus: Working\nHelium amount: {}/{}",
+                    slot.0, helium.0, MAX_HELIUM
+                );
+                harvester.0 = true;
+                harv_string.0 = "Collecting...".to_string();
+            }
+            HarvesterState::Full => {
+                string.0 = format!(
+                    "Harvester {}\nStatus: Full\nClick to collect helium",
+                    slot.0
+                );
+                harvester.0 = false;
+                harv_string.0 = "Waiting...".to_string();
+            }
+            HarvesterState::Broken => {
+                string.0 = format!("Harvester {}\nStatus: Broken\nClick to repair", slot.0);
+                harvester.0 = false;
+                harv_string.0 = "Waiting...".to_string();
+            }
+        }
+    }
 }
 
 #[derive(Component)]

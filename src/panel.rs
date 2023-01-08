@@ -1,8 +1,7 @@
 use std::io::Cursor;
 
 use crate::util::{
-    bevy_image_from_ase_image, get_cursor_pos_in_world_coord,
-    image_from_aseprite_layer_name_frame,
+    bevy_image_from_ase_image, get_cursor_pos_in_world_coord, image_from_aseprite_layer_name_frame,
 };
 
 use super::*;

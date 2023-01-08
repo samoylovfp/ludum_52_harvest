@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use harvester::update_center;
 use tooltip::{spawn_tooltip, update_tooltip};
 
+mod buggy;
 mod finish;
 mod harvester;
 mod panel;
@@ -9,7 +10,6 @@ mod start;
 mod terrain;
 mod tooltip;
 mod util;
-mod buggy;
 
 pub const PIXEL_MULTIPLIER: f32 = 5.0;
 pub const CELL_SIZE_TERRAIN: f32 = 40.0;
@@ -36,7 +36,7 @@ fn main() {
         .add_startup_system(spawn_tooltip)
         .add_system(handle_input)
         .add_system(update_tooltip)
-		.add_system(update_center)
+        .add_system(update_center)
         .run();
 }
 
