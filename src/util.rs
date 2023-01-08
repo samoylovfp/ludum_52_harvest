@@ -57,12 +57,14 @@ pub struct TerrainAssetHandlers {
     pub center_terrain_lamps: [ImgHWithSize; 3],
     pub harvester: ImgHWithSize,
     pub center: ImgHWithSize,
+	// 0 - button, 1 - red lamp, 2 - green lamp
+	pub map_button: [ImgHWithSize; 3],
 }
 
 #[derive(Resource)]
 pub struct PanelAssetHandlers {
     // 0 - red, 1 - yellow, 2 - green
-    pub center_icon: [(Handle<Image>, Vec2); 3],
+    pub center_icon: [ImgHWithSize; 3],
     pub buggy_icon: ImgHWithSize,
     pub harv_icon: ImgHWithSize,
     pub ship: ImgHWithSize,
@@ -92,6 +94,7 @@ fn img_handle_and_size_from_bytes(
 
 pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) {
     let center_terrain_lamps_bytes = include_bytes!("../assets/spritecenter1.aseprite");
+	let button_bytes = include_bytes!("../assets/spritebutton2.aseprite");
 
     commands.insert_resource(TerrainAssetHandlers {
         center_terrain_lamps: ["red", "yellow", "green"].map(|layer_name| {
@@ -107,6 +110,9 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
             "base",
             &mut textures,
         ),
+		map_button: ["buttonup", "red", "green"].map(|layer_name| {
+            img_handle_and_size_from_bytes(button_bytes, layer_name, &mut textures)
+        }),
     });
 
     let center_icon_bytes = include_bytes!("../assets/iconcenter3.aseprite");
@@ -171,7 +177,7 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
             }),
         ],
         exit: img_handle_and_size_from_bytes(
-            include_bytes!("../assets/iconship1.aseprite"),
+            panel_bytes,
             "exitup",
             &mut textures,
         ),
@@ -186,7 +192,7 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
             (textures.add(img), size * PIXEL_MULTIPLIER)
         }),
         helium_level: img_handle_and_size_from_bytes(
-            include_bytes!("../assets/iconship1.aseprite"),
+            panel_bytes,
             "he3",
             &mut textures,
         ),
