@@ -19,6 +19,7 @@ pub const TERRAIN_SIZE: (f32, f32) = (440.0 * PIXEL_MULTIPLIER, 320.0 * PIXEL_MU
 pub const MAX_HELIUM_STORAGE: usize = 20;
 pub const HELIUM_TO_BUILD_HARVESTER: usize = MAX_HELIUM_STORAGE / 2;
 pub const HELIUM_TO_MAKE_CANISTER: usize = MAX_HELIUM_STORAGE;
+pub const CANISTERS_TO_WIN: usize = 5;
 
 #[derive(Component)]
 pub struct TerrainMarker;

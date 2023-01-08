@@ -11,7 +11,7 @@ use rand::{thread_rng, Rng};
 
 use super::*;
 
-pub const HARVEST_SPEED: usize = 100;
+pub const HARVEST_SPEED: usize = 10;
 pub const MAX_HELIUM: usize = 10;
 
 pub fn add_harvester(

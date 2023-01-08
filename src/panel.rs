@@ -8,7 +8,7 @@ use crate::{
         add_harvester, CenterIcon, SlotIcon, SlotNumber, StorageHelium, StoredCanisters,
         TotalHarvesters,
     },
-    terrain::{HELIUM_TO_BUILD_HARVESTER, HELIUM_TO_MAKE_CANISTER, MAX_HELIUM_STORAGE},
+    terrain::{HELIUM_TO_BUILD_HARVESTER, HELIUM_TO_MAKE_CANISTER, MAX_HELIUM_STORAGE, CANISTERS_TO_WIN},
     tooltip::TooltipString,
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
@@ -626,6 +626,7 @@ fn canister_builder(
     mut helium: ResMut<StorageHelium>,
     mut stored_canisters: ResMut<StoredCanisters>,
     panel_assets: Res<PanelAssetHandlers>,
+    mut state: ResMut<State<AppState>>
 ) {
     for _ in canister_event.iter() {
         if helium.0 < HELIUM_TO_MAKE_CANISTER {
@@ -652,5 +653,9 @@ fn canister_builder(
             },
         ));
         stored_canisters.0 += 1;
+        if stored_canisters.0 == CANISTERS_TO_WIN {
+            state.set(AppState::Finish).unwrap();
+            return
+        }
     }
 }
