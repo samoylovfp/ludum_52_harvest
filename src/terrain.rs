@@ -2,7 +2,7 @@ use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
     harvester::{
         move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, TotalHarvesters,
-        MAX_HELIUM, Canisters,
+        MAX_HELIUM, Tanks,
     },
     tooltip::TooltipString,
     util::{image_from_aseprite, TerrainAssetHandlers},
