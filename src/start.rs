@@ -5,9 +5,9 @@ use super::*;
 #[derive(Component)]
 pub struct StartMarker;
 
-pub struct Start;
+pub struct StartPlugin;
 
-impl Plugin for Start {
+impl Plugin for StartPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_enter(AppState::Start).with_system(spawn_start));
         app.add_system_set(SystemSet::on_exit(AppState::Start).with_system(despawn_start));
@@ -15,6 +15,8 @@ impl Plugin for Start {
 }
 
 fn spawn_start(mut commands: Commands, mut fonts: ResMut<Assets<Font>>) {
+    commands.spawn((Camera2dBundle::default(), StartMarker));
+
     let font = include_bytes!("../assets/PublicPixel-z84yD.ttf");
     // FIXME (samoylovfp) deduplicate
     let font_handle = fonts.add(Font::try_from_bytes(font.to_vec()).expect("valid font"));

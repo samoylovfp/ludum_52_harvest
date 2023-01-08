@@ -25,11 +25,10 @@ fn main() {
             },
             ..default()
         }))
-        .add_plugin(start::Start)
-        .add_plugin(terrain::Terrain)
+        .add_plugin(start::StartPlugin)
+        .add_plugin(terrain::TerrainPlugin)
         .add_plugin(panel::Panel)
         .add_plugin(finish::Finish)
-        .add_startup_system(setup)
         .add_startup_system(spawn_tooltip)
         .add_system(handle_input)
         .add_system(update_tooltip)
@@ -38,12 +37,15 @@ fn main() {
 
 fn handle_input(keys: Res<Input<KeyCode>>, mut app_state: ResMut<State<AppState>>) {
     if keys.just_pressed(KeyCode::Space) {
-        match app_state.current() {
-            AppState::Start => app_state.set(AppState::Terrain).unwrap(),
-            AppState::Terrain => app_state.set(AppState::Panel).unwrap(),
-            AppState::Panel => app_state.set(AppState::Finish).unwrap(),
-            AppState::Finish => app_state.set(AppState::Start).unwrap(),
-        }
+        let state = app_state.current().clone();
+        app_state
+            .set(match state {
+                AppState::Start => AppState::Terrain,
+                AppState::Terrain => AppState::Panel,
+                AppState::Panel => AppState::Terrain,
+                AppState::Finish => AppState::Start,
+            })
+            .unwrap()
     }
 }
 
@@ -53,8 +55,4 @@ pub enum AppState {
     Terrain,
     Panel,
     Finish,
-}
-
-fn setup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
 }

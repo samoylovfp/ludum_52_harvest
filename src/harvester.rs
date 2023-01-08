@@ -14,8 +14,9 @@ pub fn add_harvester(
     static HARV_IMAGE_CELL: OnceCell<Image> = OnceCell::new();
     static HARV_TEXTURE_HANDLE_CELL: OnceCell<Handle<Image>> = OnceCell::new();
 
-    let harv_image = HARV_IMAGE_CELL
-        .get_or_init(|| image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite")));
+    let harv_image = HARV_IMAGE_CELL.get_or_init(|| {
+        image_from_aseprite(include_bytes!("../assets/spritecenter1.aseprite"), "base")
+    });
     let harv_texture_handle =
         HARV_TEXTURE_HANDLE_CELL.get_or_init(|| textures.add(harv_image.clone()));
     let size = harv_image.size() * PIXEL_MULTIPLIER;
