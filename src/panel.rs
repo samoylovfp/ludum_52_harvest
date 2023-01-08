@@ -35,6 +35,9 @@ struct PanelState {
 struct BuggyIcon;
 
 #[derive(Component)]
+struct TankLevel;
+
+#[derive(Component)]
 struct HarvesterBlueprint;
 
 #[derive(Component)]
@@ -49,10 +52,22 @@ impl Plugin for PanelPlugin {
                     .with_system(toggle_building)
                     .with_system(move_buggy_on_map)
                     .with_system(handle_harv_blueprint.after(mouse_clicks_panel))
-					.with_system(mouse_clicks_panel),
+                    .with_system(mouse_clicks_panel)
+                    .with_system(update_tank_level),
             )
             .add_event::<StopBuildingHarvesters>();
     }
+}
+
+pub fn tank_center() -> Vec3 {
+    Vec3 {
+        z: 1.0,
+        ..PANEL_OFFSET
+    } + Vec3 {
+        x: 122.0 - 80.0,
+        y: 60.0 - 103.0,
+        z: 0.0,
+    } * PIXEL_MULTIPLIER
 }
 
 fn set_up_panel(
@@ -182,6 +197,24 @@ fn set_up_panel(
                     z: 2.0,
                     ..PANEL_OFFSET
                 },
+                ..default()
+            },
+            ..default()
+        },
+    ));
+    commands.spawn((
+        TankLevel,
+        SpriteBundle {
+            sprite: Sprite {
+                color: Color::SEA_GREEN,
+                custom_size: Some(Vec2 {
+                    x: 2.0 * PIXEL_MULTIPLIER,
+                    y: 20.0 * PIXEL_MULTIPLIER,
+                }),
+                ..default()
+            },
+            transform: Transform {
+                translation: tank_center(),
                 ..default()
             },
             ..default()
@@ -381,4 +414,20 @@ fn panel_coord_to_cell_and_snapped_panel_world_coord(world_coord: Vec2) -> ((i8,
         (clamped_cell_coord.x as i8, clamped_cell_coord.y as i8),
         world_coord_on_panel,
     )
+}
+
+fn update_tank_level(
+    mut tank: Query<(&mut Sprite, &mut Transform), With<TankLevel>>,
+    mut progress: Local<f32>,
+) {
+    *progress = (*progress + 0.01).fract();
+
+    let max_tank_height = 20.0;
+
+    let height = (max_tank_height * *progress).round();
+
+    let (mut sprite, mut transform) = tank.single_mut();
+
+    transform.translation.y = tank_center().y - (10.0 - height / 2.0) * PIXEL_MULTIPLIER;
+    sprite.custom_size.as_mut().unwrap().y = height * PIXEL_MULTIPLIER;
 }

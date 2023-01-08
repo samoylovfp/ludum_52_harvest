@@ -79,11 +79,12 @@ fn setup_terrain(
     phys.gravity = Vec2 { x: 0.0, y: 0.0 };
 
     let collider_width = 100.0;
+    let offset = 98.0;
     let parameters = vec![
-        vec![0.0, size.y / 2.0 + 40.0, size.x, collider_width],
-        vec![0.0, -(size.y / 2.0 + 40.0), size.x, collider_width],
-        vec![size.x / 2.0 + 40.0, 0.0, collider_width, size.y],
-        vec![-(size.x / 2.0 + 40.0), 0.0, collider_width, size.y],
+        vec![0.0, size.y / 2.0 + offset, size.x, collider_width],
+        vec![0.0, -(size.y / 2.0 + offset), size.x, collider_width],
+        vec![size.x / 2.0 + offset, 0.0, collider_width, size.y],
+        vec![-(size.x / 2.0 + offset), 0.0, collider_width, size.y],
     ];
 
     for collider in parameters {
