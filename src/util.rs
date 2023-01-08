@@ -63,6 +63,21 @@ pub struct TerrainAssetHandlers {
 pub struct PanelAssetHandlers {
     // 0 - red, 1 - yellow, 2 - green
     pub center_icon: [(Handle<Image>, Vec2); 3],
+    pub buggy_icon: ImgHWithSize,
+    pub harv_icon: ImgHWithSize,
+    pub ship: ImgHWithSize,
+	// 3 frames animation
+    pub space: [ImgHWithSize; 3],
+	// 6 slots, each has 0 - not set, 1 - green, 2 - yellow, 3 - red
+    pub harv_slots: [[ImgHWithSize; 4]; 6],
+    pub exit: ImgHWithSize,
+	// 0 - button, 1 - writing gray, 2 - writing green
+    pub harvester_button: [ImgHWithSize; 3],
+	// 0 - button, 1 - writing gray, 2 - writing green
+    pub tank_button: [ImgHWithSize; 3],
+    pub helium_level: ImgHWithSize,
+	// 5 tanks
+    pub tanks: [ImgHWithSize; 5],
 }
 
 fn img_handle_and_size_from_bytes(
@@ -95,10 +110,88 @@ pub fn load_assets(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
     });
 
     let center_icon_bytes = include_bytes!("../assets/iconcenter3.aseprite");
+    let panel_bytes = include_bytes!("../assets/spritepanel8.aseprite");
 
     commands.insert_resource(PanelAssetHandlers {
         center_icon: ["red", "yellow", "green"].map(|layer_name| {
             let img = image_from_aseprite_layer_name_frame(center_icon_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+        buggy_icon: img_handle_and_size_from_bytes(
+            include_bytes!("../assets/iconbuggy1.aseprite"),
+            "Layer 1",
+            &mut textures,
+        ),
+        harv_icon: img_handle_and_size_from_bytes(
+            include_bytes!("../assets/iconharvest1.aseprite"),
+            "Layer 1",
+            &mut textures,
+        ),
+        ship: img_handle_and_size_from_bytes(
+            include_bytes!("../assets/iconship1.aseprite"),
+            "Layer 1",
+            &mut textures,
+        ),
+        space: ["space1", "space2", "space3"].map(|layer_name| {
+            let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+        harv_slots: [
+            ["harv1off", "harv1green", "harv1yellow", "harv1red"].map(|layer_name| {
+                let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+                let size = img.size();
+                (textures.add(img), size * PIXEL_MULTIPLIER)
+            }),
+            ["harv2off", "harv2green", "harv2yellow", "harv2red"].map(|layer_name| {
+                let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+                let size = img.size();
+                (textures.add(img), size * PIXEL_MULTIPLIER)
+            }),
+            ["harv3off", "harv3green", "harv3yellow", "harv3red"].map(|layer_name| {
+                let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+                let size = img.size();
+                (textures.add(img), size * PIXEL_MULTIPLIER)
+            }),
+            ["harv4off", "harv4green", "harv4yellow", "harv4red"].map(|layer_name| {
+                let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+                let size = img.size();
+                (textures.add(img), size * PIXEL_MULTIPLIER)
+            }),
+            ["harv5off", "harv5green", "harv5yellow", "harv5red"].map(|layer_name| {
+                let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+                let size = img.size();
+                (textures.add(img), size * PIXEL_MULTIPLIER)
+            }),
+            ["harv6off", "harv6green", "harv6yellow", "harv6red"].map(|layer_name| {
+                let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+                let size = img.size();
+                (textures.add(img), size * PIXEL_MULTIPLIER)
+            }),
+        ],
+        exit: img_handle_and_size_from_bytes(
+            include_bytes!("../assets/iconship1.aseprite"),
+            "exitup",
+            &mut textures,
+        ),
+        harvester_button: ["harvesterup", "harvesteroff", "harvestergreen"].map(|layer_name| {
+            let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+        tank_button: ["tankup", "tankoff", "tankgreen"].map(|layer_name| {
+            let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
+            let size = img.size();
+            (textures.add(img), size * PIXEL_MULTIPLIER)
+        }),
+        helium_level: img_handle_and_size_from_bytes(
+            include_bytes!("../assets/iconship1.aseprite"),
+            "he3",
+            &mut textures,
+        ),
+        tanks: ["tank1", "tank2", "tank3", "tank4", "tank5"].map(|layer_name| {
+            let img = image_from_aseprite_layer_name_frame(panel_bytes, layer_name, 0);
             let size = img.size();
             (textures.add(img), size * PIXEL_MULTIPLIER)
         }),

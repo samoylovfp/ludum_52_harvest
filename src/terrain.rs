@@ -50,7 +50,7 @@ fn setup_terrain(
 
     let terrain_image = TERRAIN_IMAGE_CELL.get_or_init(|| {
         image_from_aseprite(
-            include_bytes!("../assets/spritemap3.aseprite"),
+            include_bytes!("../assets/spritemap5.aseprite"),
             "Layer 1",
         )
     });
