@@ -45,7 +45,7 @@ fn main() {
             .add_system(update_tooltip)
             .add_system(update_center)
             .add_startup_system(load_assets)
-            .add_system(start_music)
+            .add_startup_system(music)
             .insert_resource(MusicStarted(false))
             .run()
     };
@@ -55,12 +55,12 @@ fn main() {
         use wasm_bindgen::JsCast;
         console_error_panic_hook::set_once();
         let doc = web_sys::window().unwrap().document().unwrap();
-        let mut button = doc
+        let button = doc
             .create_element("button")
             .unwrap()
             .dyn_into::<web_sys::HtmlElement>()
             .unwrap();
-        button.set_inner_html("Start");
+        button.set_inner_html("Click to start");
         let button_clone = button.clone();
         doc.body().unwrap().append_child(&button).unwrap();
         let f = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
@@ -94,26 +94,14 @@ fn handle_input(keys: Res<Input<KeyCode>>, mut app_state: ResMut<State<AppState>
 #[derive(Resource)]
 struct MusicStarted(bool);
 
-fn start_music(
-    mut commands: Commands,
-    audio: Res<Audio>,
-    mut source: ResMut<Assets<AudioSource>>,
-    buttons: Res<Input<MouseButton>>,
-    mut playing: ResMut<MusicStarted>,
-) {
-    if playing.0 {
-        return;
-    }
-    if buttons.just_pressed(MouseButton::Left) {
-        let data = StaticSoundData::from_cursor(
-            Cursor::new(include_bytes!("../assets/theme.ogg")),
-            StaticSoundSettings::default(),
-        )
-        .unwrap();
-        let handle = source.add(AudioSource { sound: data });
-        audio.play(handle).with_volume(0.2).looped();
-        playing.0 = true;
-    }
+fn music(audio: Res<Audio>, mut source: ResMut<Assets<AudioSource>>) {
+    let data = StaticSoundData::from_cursor(
+        Cursor::new(include_bytes!("../assets/theme.ogg")),
+        StaticSoundSettings::default(),
+    )
+    .unwrap();
+    let handle = source.add(AudioSource { sound: data });
+    audio.play(handle).with_volume(0.2).looped();
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
