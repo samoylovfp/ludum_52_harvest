@@ -2,7 +2,7 @@ use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
     harvester::{
         move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, StoredCanisters,
-        TotalHarvesters, MAX_HELIUM, BREAKTIME,
+        TotalHarvesters, BREAKTIME, MAX_HELIUM,
     },
     start::{check_end, set_timer},
     tooltip::{spawn_tooltip, TooltipString},
@@ -47,12 +47,12 @@ impl Plugin for TerrainPlugin {
         .add_system_set(
             SystemSet::on_update(AppState::Terrain)
                 .with_system(mouse_clicks)
-                .with_system(update_button)
+                .with_system(update_button.after(buggy_movement_and_control))
                 .with_system(update_base),
         )
         .add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(enable_terrain_cam))
         .add_system(move_harvesters)
-		.add_system(check_end)
+        .add_system(check_end)
         .add_system(buggy_movement_and_control)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(12.0));
         // .add_plugin(RapierDebugRenderPlugin::default());

@@ -50,7 +50,10 @@ pub fn setup_buggy(mut commands: Commands, mut textures: ResMut<Assets<Image>>) 
 
 #[allow(clippy::type_complexity)]
 pub fn buggy_movement_and_control(
-    mut buggy: Query<(&Velocity, &mut ExternalForce, &Transform), (With<Buggy>, Without<Camera2d>)>,
+    mut buggy: Query<
+        (&mut Velocity, &mut ExternalForce, &Transform),
+        (With<Buggy>, Without<Camera2d>),
+    >,
     mut camera: Query<&mut Transform, (With<TerrainMarker>, With<Camera2d>)>,
     keys: Res<Input<KeyCode>>,
     state: Res<State<AppState>>,
@@ -59,12 +62,14 @@ pub fn buggy_movement_and_control(
     let mut position = None;
 
     let friction = 400.0;
-    let max_turn_force = 3000.0;
-    let horse_power_fwd = 15_000.0;
+    let max_turn_vel = 3.0;
+    let turn_vel = 0.5;
+    let horse_power_fwd = 25_000.0;
     let horse_power_back = 10_000.0;
-    let steering_centering_force = 2000.0;
+    let steering_centering_vel = 0.3;
+    let breaking_power = 30_000.0;
 
-    if let Ok((vel, mut force, pos)) = buggy.get_single_mut() {
+    if let Ok((mut vel, mut force, pos)) = buggy.get_single_mut() {
         let buggy_side = pos.rotation
             * Vec3 {
                 x: 1.0,
@@ -77,8 +82,11 @@ pub fn buggy_movement_and_control(
                 y: 1.0,
                 z: 0.0,
             };
-        let turn_force = (vel.linvel.length() * 10.0).min(max_turn_force);
-        force.torque = -vel.angvel * steering_centering_force;
+
+        let forward_vel = vel.linvel.dot(buggy_heading.truncate());
+
+        let turn_force = ((forward_vel.abs() * 0.03).min(max_turn_vel)) * forward_vel.signum();
+        vel.angvel -= vel.angvel * steering_centering_vel;
 
         let mut acceleration = 0.0;
         force.force = Vec2::default();
@@ -87,13 +95,17 @@ pub fn buggy_movement_and_control(
                 acceleration = horse_power_fwd;
             }
             if keys.pressed(KeyCode::S) {
-                acceleration = -horse_power_back;
+                if forward_vel > 0.0 {
+                    acceleration = -breaking_power
+                } else {
+                    acceleration = -horse_power_back;
+                }
             }
             if keys.pressed(KeyCode::A) {
-                force.torque = turn_force;
+                vel.angvel = (vel.angvel + turn_vel).min(turn_force);
             }
             if keys.pressed(KeyCode::D) {
-                force.torque = -turn_force;
+                vel.angvel = (vel.angvel - turn_vel).max(-turn_force);
             }
         }
         force.force += buggy_heading.truncate() * acceleration;
