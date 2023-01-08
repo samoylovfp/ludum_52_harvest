@@ -13,7 +13,6 @@ You can play it [HERE](https://samoylovfp.github.io/ludum_52_harvest/). Instruct
 ![demo](demo.webp)
 
 # Instructions
-## English
 ### Plot
 You're a Moon worker, your job is to maintain harvesters that collect Helium (He-3).
 You want to leave Moon on the closest ship (you can come up with the reasons yourself based on how dramatic you are).
