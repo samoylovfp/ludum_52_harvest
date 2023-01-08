@@ -41,7 +41,8 @@ impl Plugin for TerrainPlugin {
         .add_system_set(
             SystemSet::on_update(AppState::Terrain)
                 .with_system(mouse_clicks)
-                .with_system(update_button),
+                .with_system(update_button)
+				.with_system(update_base),
         )
         .add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(enable_terrain_cam))
         .add_system(move_harvesters)
@@ -131,7 +132,7 @@ fn setup_terrain(
                 translation: Vec3::new(
                     TERRAIN_SIZE.0 / 2.0 - CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
                     CELL_SIZE_TERRAIN * PIXEL_MULTIPLIER / 2.0,
-                    1.0,
+                    -100.0,
                 ),
                 ..Default::default()
             },
@@ -171,7 +172,8 @@ fn mouse_clicks(
     mut buttons: ResMut<Input<MouseButton>>,
     mut app_state: ResMut<State<AppState>>,
     map_button: Query<(&Transform, &Sprite), With<MapButton>>,
-    base: Query<&Transform, With<Base>>,
+	base: Query<(&Transform, &Sprite), With<Base>>,
+	mut storage_total: ResMut<StorageHelium>
 ) {
     let (buggy, mut storage, mut buggy_string) = buggy.single_mut();
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
@@ -208,7 +210,28 @@ fn mouse_clicks(
                 return;
             }
 
-			let base = base.single();
+			let (base, base_sprite) = base.single();
+
+			if collide(
+                base.translation,
+                Vec2 {
+                    x: base_sprite.custom_size.unwrap().x,
+                    y: base_sprite.custom_size.unwrap().y,
+                },
+                world_pos,
+                Vec2 { x: 1.0, y: 1.0 },
+            )
+            .is_some()
+            {
+                storage_total.0 += storage.0;
+				storage.0 = 0;
+				if storage_total.0 > MAX_HELIUM_STORAGE {
+					storage.0 += storage_total.0 - MAX_HELIUM_STORAGE;
+					storage_total.0 = MAX_HELIUM_STORAGE;
+				}
+				buggy_string.0 = format!("Helium amount: {}", storage.0);
+                return;
+            }
 
             for (center, sprite, mut helium, mut state, mut breaktime) in centers.iter_mut() {
                 if collide(
@@ -269,4 +292,9 @@ pub fn update_button(
             *sprite = terrain_assets.map_button[1].0.clone();
         }
     }
+}
+
+fn update_base(mut base: Query<&mut TooltipString, With<Base>>, storage_total: Res<StorageHelium>) {
+	let mut string = base.single_mut();
+	string.0 = format!("Helium:\n{}/{}", storage_total.0, MAX_HELIUM_STORAGE);
 }
