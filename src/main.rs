@@ -9,6 +9,7 @@ mod start;
 mod terrain;
 mod tooltip;
 mod util;
+mod buggy;
 
 pub const PIXEL_MULTIPLIER: f32 = 5.0;
 pub const CELL_SIZE_TERRAIN: f32 = 40.0;
