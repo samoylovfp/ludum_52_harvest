@@ -1,12 +1,13 @@
 use crate::{
     buggy::{buggy_movement_and_control, setup_buggy, Buggy},
     harvester::{
-        move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, TotalHarvesters,
-        MAX_HELIUM, Tanks,
+        move_harvesters, BreakTime, Center, HarvesterState, Helium, StorageHelium, StoredCanisters,
+        TotalHarvesters, MAX_HELIUM,
     },
-    tooltip::{TooltipString, spawn_tooltip},
+    start::{check_end, set_timer},
+    tooltip::{spawn_tooltip, TooltipString},
     util::{image_from_aseprite, TerrainAssetHandlers},
-    AppState, CELL_SIZE_TERRAIN, HEIGHT, PIXEL_MULTIPLIER, WIDTH, start::{set_timer, check_end},
+    AppState, CELL_SIZE_TERRAIN, HEIGHT, PIXEL_MULTIPLIER, WIDTH,
 };
 use bevy::{prelude::*, render::camera::RenderTarget, sprite::collide_aabb::collide};
 use bevy_rapier2d::prelude::*;
@@ -17,6 +18,7 @@ pub const COLLECT_DISTANCE: f32 = 500.0;
 pub const TERRAIN_SIZE: (f32, f32) = (440.0 * PIXEL_MULTIPLIER, 320.0 * PIXEL_MULTIPLIER);
 pub const MAX_HELIUM_STORAGE: usize = 20;
 pub const HELIUM_TO_BUILD_HARVESTER: usize = MAX_HELIUM_STORAGE / 2;
+pub const HELIUM_TO_MAKE_CANISTER: usize = MAX_HELIUM_STORAGE;
 
 #[derive(Component)]
 pub struct TerrainMarker;
@@ -38,18 +40,18 @@ impl Plugin for TerrainPlugin {
             SystemSet::on_exit(AppState::Start)
                 .with_system(setup_terrain)
                 .with_system(setup_buggy)
-				.with_system(set_timer)
-				.with_system(spawn_tooltip),
+                .with_system(set_timer)
+                .with_system(spawn_tooltip),
         )
         .add_system_set(
             SystemSet::on_update(AppState::Terrain)
                 .with_system(mouse_clicks)
                 .with_system(update_button)
-				.with_system(update_base),
+                .with_system(update_base),
         )
         .add_system_set(SystemSet::on_enter(AppState::Terrain).with_system(enable_terrain_cam))
         .add_system(move_harvesters)
-		// .add_system(check_end)
+        // .add_system(check_end)
         .add_system(buggy_movement_and_control)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(12.0));
         // .add_plugin(RapierDebugRenderPlugin::default());
@@ -120,7 +122,7 @@ fn setup_terrain(
             ..default()
         })
         .insert(MapButton)
-		.insert(TooltipString("Open info panel".to_string()))
+        .insert(TooltipString("Open info panel".to_string()))
         .insert(TerrainMarker);
 
     commands
@@ -149,7 +151,7 @@ fn setup_terrain(
 
     commands.insert_resource(TotalHarvesters(0));
     commands.insert_resource(StorageHelium(MAX_HELIUM_STORAGE - 1));
-	commands.insert_resource(Tanks(0));
+    commands.insert_resource(StoredCanisters(0));
 }
 
 fn enable_terrain_cam(
@@ -178,8 +180,8 @@ fn mouse_clicks(
     mut buttons: ResMut<Input<MouseButton>>,
     mut app_state: ResMut<State<AppState>>,
     map_button: Query<(&Transform, &Sprite), With<MapButton>>,
-	base: Query<(&Transform, &Sprite), With<Base>>,
-	mut storage_total: ResMut<StorageHelium>
+    base: Query<(&Transform, &Sprite), With<Base>>,
+    mut storage_total: ResMut<StorageHelium>,
 ) {
     let (buggy, mut storage, mut buggy_string) = buggy.single_mut();
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
@@ -216,9 +218,9 @@ fn mouse_clicks(
                 return;
             }
 
-			let (base, base_sprite) = base.single();
+            let (base, base_sprite) = base.single();
 
-			if collide(
+            if collide(
                 base.translation,
                 Vec2 {
                     x: base_sprite.custom_size.unwrap().x,
@@ -230,12 +232,12 @@ fn mouse_clicks(
             .is_some()
             {
                 storage_total.0 += storage.0;
-				storage.0 = 0;
-				if storage_total.0 > MAX_HELIUM_STORAGE {
-					storage.0 += storage_total.0 - MAX_HELIUM_STORAGE;
-					storage_total.0 = MAX_HELIUM_STORAGE;
-				}
-				buggy_string.0 = format!("Helium amount: {}", storage.0);
+                storage.0 = 0;
+                if storage_total.0 > MAX_HELIUM_STORAGE {
+                    storage.0 += storage_total.0 - MAX_HELIUM_STORAGE;
+                    storage_total.0 = MAX_HELIUM_STORAGE;
+                }
+                buggy_string.0 = format!("Helium amount: {}", storage.0);
                 return;
             }
 
@@ -301,6 +303,6 @@ pub fn update_button(
 }
 
 fn update_base(mut base: Query<&mut TooltipString, With<Base>>, storage_total: Res<StorageHelium>) {
-	let mut string = base.single_mut();
-	string.0 = format!("Helium:\n{}/{}", storage_total.0, MAX_HELIUM_STORAGE);
+    let mut string = base.single_mut();
+    string.0 = format!("Helium:\n{}/{}", storage_total.0, MAX_HELIUM_STORAGE);
 }

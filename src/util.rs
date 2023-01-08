@@ -63,22 +63,22 @@ pub struct TerrainAssetHandlers {
 
 #[derive(Resource)]
 pub struct PanelAssetHandlers {
-    // green, yellow, red
+    /// green, yellow, red
     pub center_icon: [ImgHWithSize; 3],
     pub buggy_icon: ImgHWithSize,
     pub harv_icon: ImgHWithSize,
     pub ship: ImgHWithSize,
-    // 3 frames animation
+    /// 3 frames animation
     pub space: [ImgHWithSize; 3],
-    // 6 slots, each has 0 - not set, 1 - green, 2 - yellow, 3 - red
+    /// 6 slots, each has 0 - not set, 1 - green, 2 - yellow, 3 - red
     pub harv_slots: [[ImgHWithSize; 4]; 6],
     pub exit: ImgHWithSize,
-    // 0 - button, 1 - writing gray, 2 - writing green
+    /// 0 - button, 1 - writing gray, 2 - writing green
     pub harvester_button: [ImgHWithSize; 3],
-    // 0 - button, 1 - writing gray, 2 - writing green
+    /// 0 - button, 1 - writing gray, 2 - writing green
     pub tank_button: [ImgHWithSize; 3],
     pub helium_level: ImgHWithSize,
-    // 5 tanks
+    /// 5 tanks
     pub tanks: [ImgHWithSize; 5],
 }
 

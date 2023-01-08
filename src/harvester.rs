@@ -315,4 +315,4 @@ pub struct Lamp;
 pub struct StorageHelium(pub usize);
 
 #[derive(Resource)]
-pub struct Tanks(pub usize);
+pub struct StoredCanisters(pub usize);

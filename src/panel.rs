@@ -1,11 +1,14 @@
 use std::io::Cursor;
 
-use bevy::{render::camera::RenderTarget, sprite::collide_aabb::collide};
+use bevy::{ecs::query::ROQueryItem, render::camera::RenderTarget, sprite::collide_aabb::collide};
 
 use crate::{
     buggy::Buggy,
-    harvester::{add_harvester, CenterIcon, SlotIcon, SlotNumber, StorageHelium, TotalHarvesters},
-    terrain::{HELIUM_TO_BUILD_HARVESTER, MAX_HELIUM_STORAGE},
+    harvester::{
+        add_harvester, CenterIcon, SlotIcon, SlotNumber, StorageHelium, StoredCanisters,
+        TotalHarvesters,
+    },
+    terrain::{HELIUM_TO_BUILD_HARVESTER, HELIUM_TO_MAKE_CANISTER, MAX_HELIUM_STORAGE},
     tooltip::TooltipString,
     util::{
         bevy_image_from_ase_image, get_cursor_pos_in_world_coord, PanelAssetHandlers,
@@ -40,6 +43,18 @@ struct BuggyIcon;
 struct TankLevel;
 
 #[derive(Component)]
+struct CanisterButtonSprite;
+
+#[derive(Component)]
+struct CanisterButtonText;
+
+#[derive(Component)]
+struct CanisterButtonSensor;
+
+#[derive(Component)]
+struct StoredCanister;
+
+#[derive(Component)]
 struct HarvesterBlueprint;
 
 #[derive(Component)]
@@ -61,10 +76,12 @@ impl Plugin for PanelPlugin {
                     .with_system(move_buggy_on_map)
                     .with_system(handle_harv_blueprint.after(mouse_clicks_panel))
                     .with_system(mouse_clicks_panel)
-                    .with_system(update_tank_level),
+                    .with_system(update_tank_level)
+                    .with_system(canister_builder),
             )
             .add_event::<StopBuildingHarvesters>()
-            .add_event::<EnterBuildingHarvestersMode>();
+            .add_event::<EnterBuildingHarvestersMode>()
+            .add_event::<MakeCanister>();
     }
 }
 
@@ -291,6 +308,64 @@ fn set_up_panel(
             ..default()
         },
     ));
+
+    commands.spawn((
+        CanisterButtonSprite,
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(panel_assets.tank_button[0].1),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    z: 1.0,
+                    ..PANEL_OFFSET
+                },
+                ..default()
+            },
+            texture: panel_assets.tank_button[0].0.clone(),
+            ..default()
+        },
+    ));
+
+    commands.spawn((
+        CanisterButtonText,
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(panel_assets.tank_button[1].1),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    z: 2.0,
+                    ..PANEL_OFFSET
+                },
+                ..default()
+            },
+            texture: panel_assets.tank_button[1].0.clone(),
+            ..default()
+        },
+    ));
+
+    commands.spawn((
+        CanisterButtonSensor,
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(27.0 * PIXEL_MULTIPLIER, 9.0 * PIXEL_MULTIPLIER)),
+                color: Color::rgba(0.0, 1.0, 1.0, 0.0),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 {
+                    x: PANEL_OFFSET.x - WIDTH / 2.0 + 142.5 * PIXEL_MULTIPLIER,
+                    y: PANEL_OFFSET.y + HEIGHT / 2.0 - 89.5 * PIXEL_MULTIPLIER,
+                    z: 3.0,
+                },
+                ..default()
+            },
+            ..default()
+        },
+    ));
 }
 
 fn enable_panel_cam(
@@ -303,6 +378,7 @@ fn enable_panel_cam(
 
 struct StopBuildingHarvesters;
 struct EnterBuildingHarvestersMode;
+struct MakeCanister;
 
 fn toggle_building(
     mut commands: Commands,
@@ -364,6 +440,11 @@ fn handle_harv_blueprint(
 
     harv_blueprint.for_each_mut(|mut t| t.translation = world_coord_on_panel.extend(2.0));
     if buttons.just_pressed(MouseButton::Left) && panel_state.building_harvester {
+        // TODO if placement valid
+        if helium.0 < HELIUM_TO_BUILD_HARVESTER {
+            stopper.send(StopBuildingHarvesters);
+            return;
+        }
         let (slot_entity, mut slot_image_handler, slot_number) = {
             let s = slot_sprites
                 .iter_mut()
@@ -391,11 +472,6 @@ fn handle_harv_blueprint(
             })
             .id();
 
-        // TODO if placement valid
-        if helium.0 < HELIUM_TO_BUILD_HARVESTER {
-            stopper.send(StopBuildingHarvesters);
-            return;
-        }
         helium.0 -= HELIUM_TO_BUILD_HARVESTER;
         add_harvester(
             commands,
@@ -418,8 +494,10 @@ fn mouse_clicks_panel(
     mut app_state: ResMut<State<AppState>>,
     terrain_button: Query<(&Transform, &Sprite), With<SwitchToTerrainButton>>,
     harvester_button: Query<(&Transform, &Sprite), With<BuildHarvesterButtonSensor>>,
+    canister_button: Query<(&Transform, &Sprite), With<CanisterButtonSensor>>,
     helium: Res<StorageHelium>,
     mut building_starter: EventWriter<EnterBuildingHarvestersMode>,
+    mut canister_builder: EventWriter<MakeCanister>,
 ) {
     let Some((camera, camera_transform)) = q_camera.iter().find(|(c,_)|c.is_active) else {return};
 
@@ -438,36 +516,32 @@ fn mouse_clicks_panel(
                 camera_transform.compute_matrix() * camera.projection_matrix().inverse();
             let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
 
-            let (terrain_button, button_sprite) = terrain_button.single();
+            let clicks_sprite = |q: ROQueryItem<(&Transform, &Sprite)>| {
+                collide(
+                    q.0.translation,
+                    Vec2 {
+                        x: q.1.custom_size.unwrap().x,
+                        y: q.1.custom_size.unwrap().y,
+                    },
+                    world_pos,
+                    cursor_collider,
+                )
+                .is_some()
+            };
 
-            if collide(
-                terrain_button.translation,
-                Vec2 {
-                    x: button_sprite.custom_size.unwrap().x,
-                    y: button_sprite.custom_size.unwrap().y,
-                },
-                world_pos,
-                cursor_collider,
-            )
-            .is_some()
-            {
+            if clicks_sprite(terrain_button.single()) {
                 app_state.set(AppState::Terrain).unwrap();
                 buttons.clear();
                 return;
             }
 
-            let (new_harv_but_pos, new_harv_sprite) = harvester_button.single();
-            if collide(
-                new_harv_but_pos.translation,
-                new_harv_sprite.custom_size.unwrap(),
-                world_pos,
-                cursor_collider,
-            )
-            .is_some()
-                && helium.0 >= HELIUM_TO_BUILD_HARVESTER
-            {
+            if clicks_sprite(harvester_button.single()) && helium.0 >= HELIUM_TO_BUILD_HARVESTER {
                 building_starter.send(EnterBuildingHarvestersMode);
                 buttons.clear();
+            }
+
+            if clicks_sprite(canister_button.single()) && helium.0 >= HELIUM_TO_MAKE_CANISTER {
+                canister_builder.send(MakeCanister);
             }
         }
     }
@@ -516,7 +590,11 @@ fn panel_coord_to_cell_and_snapped_panel_world_coord(world_coord: Vec2) -> ((i8,
 fn update_tank_level(
     mut tank: Query<(&mut Sprite, &mut Transform), With<TankLevel>>,
     helium: Res<StorageHelium>,
-    mut button: Query<&mut Handle<Image>, With<HarvesterButtonText>>,
+    mut new_harv_button: Query<&mut Handle<Image>, With<HarvesterButtonText>>,
+    mut canister_button: Query<
+        &mut Handle<Image>,
+        (With<CanisterButtonText>, Without<HarvesterButtonText>),
+    >,
     panel_assets: Res<PanelAssetHandlers>,
 ) {
     let max_tank_height_px = 20.0;
@@ -531,5 +609,48 @@ fn update_tank_level(
         true => 2,
         false => 1,
     };
-    *button.single_mut() = panel_assets.harvester_button[button_text_img_idx].0.clone();
+    *new_harv_button.single_mut() = panel_assets.harvester_button[button_text_img_idx].0.clone();
+
+    *canister_button.single_mut() =
+        panel_assets.tank_button[match helium.0 >= HELIUM_TO_MAKE_CANISTER {
+            true => 2,
+            false => 1,
+        }]
+        .0
+        .clone();
+}
+
+fn canister_builder(
+    mut commands: Commands,
+    mut canister_event: EventReader<MakeCanister>,
+    mut helium: ResMut<StorageHelium>,
+    mut stored_canisters: ResMut<StoredCanisters>,
+    panel_assets: Res<PanelAssetHandlers>,
+) {
+    for _ in canister_event.iter() {
+        if helium.0 < HELIUM_TO_MAKE_CANISTER {
+            return;
+        }
+        helium.0 -= HELIUM_TO_MAKE_CANISTER;
+        let (can_img, size) = &panel_assets.tanks[stored_canisters.0.min(panel_assets.tanks.len() - 1)];
+        commands.spawn((
+            StoredCanister,
+            SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(*size),
+                    ..default()
+                },
+                texture: can_img.clone(),
+                transform: Transform {
+                    translation: Vec3 {
+                        z: 1.0,
+                        ..PANEL_OFFSET
+                    },
+                    ..default()
+                },
+                ..default()
+            },
+        ));
+        stored_canisters.0 += 1;
+    }
 }
